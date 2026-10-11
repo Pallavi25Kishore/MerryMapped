@@ -1,0 +1,27 @@
+# OS / editor
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# Python
+.venv/
+.venv-*/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Office lock files
+~$*
+
+# Design docs stay local (not published)
+docs/
