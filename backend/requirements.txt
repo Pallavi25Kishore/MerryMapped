@@ -1,0 +1,3 @@
+# Packages the app needs to run (also installed on the live server).
+# Install: pip install -r requirements.txt
+fastapi[standard]==0.143.0
