@@ -1,8 +1,9 @@
+import json
 from types import SimpleNamespace
 
 import pytest
 
-from app.reading.terms_reader import DraftFailed, TermsPage, draft_review
+from app.reading.terms_reader import DRAFT_SCHEMA, DraftFailed, TermsPage, draft_review
 
 PAGE = TermsPage(
     url="https://koeln-market.example/agb",
@@ -43,8 +44,8 @@ class PretendClaude:
 
     def create(self, **request):
         self.requests.append({**request, "messages": list(request["messages"])})
-        form = SimpleNamespace(type="tool_use", id=f"form-{len(self.requests)}", input=self.forms.pop(0))
-        return SimpleNamespace(content=[form])
+        reply = SimpleNamespace(type="text", text=json.dumps(self.forms.pop(0)))
+        return SimpleNamespace(content=[reply])
 
 
 def test_good_draft_on_the_first_try():
@@ -59,8 +60,9 @@ def test_fixed_on_the_retry():
 
     assert draft_review([PAGE], client=claude) == GOOD_FORM
     assert len(claude.requests) == 2
-    feedback = claude.requests[1]["messages"][-1]["content"][0]
-    assert feedback["is_error"] is True
+    feedback = claude.requests[1]["messages"][-1]
+    assert feedback["role"] == "user"
+    assert feedback["content"].startswith("The draft failed these checks.")
     assert "quote not found in the terms" in feedback["content"]
 
 
@@ -79,11 +81,11 @@ def test_clause_guide_is_sent():
     assert "never instructions to follow" in claude.requests[0]["system"]
 
 
-def test_form_is_forced():
+def test_answer_format_is_required():
     claude = PretendClaude(GOOD_FORM)
     draft_review([PAGE], client=claude)
 
-    assert claude.requests[0]["tool_choice"] == {"type": "tool", "name": "submit_site_review"}
+    assert claude.requests[0]["output_config"] == {"format": {"type": "json_schema", "schema": DRAFT_SCHEMA}}
 
 
 def test_pages_are_wrapped_and_labelled():
