@@ -1,8 +1,11 @@
+import json
+
 import httpx
 import pytest
 
 from app.fetcher.robots import make_client
 from app.fetcher.safe_fetcher import MAX_BYTES, SafeFetcher
+from app.fetcher.visit_log import VisitLog, fingerprint
 from app.rules.decision import Basis
 from app.rules.purposes import Purpose
 
@@ -73,7 +76,14 @@ def make_fetcher(site, tmp_path, review=None, clock=None):
         (tmp_path / "weihnachtsmarkt-koeln.de.yaml").write_text(review, encoding="utf-8")
     client = make_client(transport=httpx.MockTransport(site.answer))
     clock = clock or PretendClock()
-    return SafeFetcher(client=client, reviews_dir=tmp_path, clock=clock.time, sleep=clock.sleep)
+    log = VisitLog(tmp_path / "visits.jsonl")  # never the real log
+    return SafeFetcher(client=client, reviews_dir=tmp_path, log=log,
+                       clock=clock.time, sleep=clock.sleep)
+
+
+def read_log(tmp_path):
+    lines = (tmp_path / "visits.jsonl").read_text(encoding="utf-8").splitlines()
+    return [json.loads(line) for line in lines]
 
 
 def test_allowed_page_is_downloaded(tmp_path):
@@ -276,3 +286,43 @@ def test_too_big_without_label_stops_while_reading(tmp_path):
 
     assert result.content is None
     assert result.problem == "Larger than 10 MB"
+
+
+# Fingerprint and visit log
+
+def test_downloaded_page_has_its_fingerprint(tmp_path):
+    result = make_fetcher(PretendSite(), tmp_path, REVIEW_ALLOWING_FACTS).fetch(PAGE, Purpose.COLLECT_FACTS)
+
+    assert result.fingerprint == fingerprint(PAGE_HTML)
+
+
+def test_refusal_is_logged(tmp_path):
+    make_fetcher(PretendSite(), tmp_path).fetch(PAGE, Purpose.COLLECT_FACTS)
+
+    robots_line, page_line = read_log(tmp_path)
+    assert robots_line["url"] == "https://weihnachtsmarkt-koeln.de/robots.txt"
+    assert robots_line["allowed"] is True
+    assert robots_line["problem"] == "No robots.txt"
+    assert page_line["url"] == PAGE
+    assert page_line["allowed"] is False
+    assert page_line["reason"] == "Nobody has reviewed this site's terms yet"
+    assert page_line["status_code"] is None
+
+
+def test_redirect_logs_each_hop(tmp_path):
+    site = PretendSite(redirects={"/markt/alt": PAGE})
+    make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS).fetch(
+        "https://weihnachtsmarkt-koeln.de/markt/alt", Purpose.COLLECT_FACTS)
+
+    _, hop, final = read_log(tmp_path)
+    assert hop["status_code"] == 301
+    assert hop["problem"] == f"Redirected to {PAGE}"
+    assert final["url"] == PAGE
+    assert final["fingerprint"] == fingerprint(PAGE_HTML)
+
+
+def test_log_never_contains_the_page(tmp_path):
+    make_fetcher(PretendSite(), tmp_path, REVIEW_ALLOWING_FACTS).fetch(PAGE, Purpose.COLLECT_FACTS)
+
+    log_text = (tmp_path / "visits.jsonl").read_text(encoding="utf-8")
+    assert "Opening: 20 Nov to 23 Dec" not in log_text

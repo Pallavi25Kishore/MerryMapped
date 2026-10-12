@@ -25,3 +25,6 @@ out/
 
 # Design docs stay local (not published)
 docs/
+
+# Runtime logs stay local
+backend/logs/

@@ -1,13 +1,14 @@
 import time
-from dataclasses import dataclass
+from dataclasses import replace
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 import httpx
 from protego import Protego
 
+from app.fetcher.result import FetchResult
 from app.fetcher.robots import get_robots_txt, make_client, robots_url
-from app.rules.decision import Decision
+from app.fetcher.visit_log import VisitLog, fingerprint
 from app.rules.engine import BOT_NAME, FETCHES_PAGES, can, site_of
 from app.rules.purposes import Purpose
 from app.rules.site_review import REVIEWS_DIR, load_review
@@ -20,39 +21,40 @@ MAX_REDIRECTS = 5
 ACCEPTED_TYPES = {"text/html", "application/xhtml+xml", "application/pdf"}
 
 
-@dataclass(frozen=True)
-class FetchResult:
-    """What a fetch hands back: the engine's slip, and the page if it was downloaded."""
-
-    decision: Decision
-    url: str                        # the address this result is for (after any redirects)
-    status_code: int | None = None  # the site's answer (200, 404, ...); None if never downloaded
-    content: bytes | None = None    # the page, in memory only; None unless it passed every check
-    problem: str | None = None      # why there is no page, even though the engine said yes
-
-
 class SafeFetcher:
     """The only path to the web. Asks the rules engine before every download."""
 
     def __init__(self, client: httpx.Client | None = None, reviews_dir: Path = REVIEWS_DIR,
-                 clock=time.monotonic, sleep=time.sleep):
+                 log: VisitLog | None = None, clock=time.monotonic, sleep=time.sleep):
         self.client = client or make_client()
         self.reviews_dir = reviews_dir
+        self.log = log or VisitLog()
         self.robots_cache: dict[str, str | None] = {}  # robots.txt per site, downloaded once
         self.clock = clock
         self.sleep = sleep
         self.last_visit: dict[str, float] = {}  # when we last requested anything from each site
 
     def fetch(self, url: str, purpose: Purpose, redirects_left: int = MAX_REDIRECTS) -> FetchResult:
-        """Download a page for a purpose, only if the rules engine says yes."""
+        """Download a page for a purpose, only if the rules engine says yes. Logs every attempt."""
         if purpose not in FETCHES_PAGES:
             raise ValueError(f"{purpose} does not download pages")
 
+        result, next_url = self.fetch_once(url, purpose)
+        if next_url is not None and redirects_left == 0:
+            result, next_url = replace(result, problem="Too many redirects"), None
+        self.log.record(result)
+
+        if next_url is not None:
+            return self.fetch(next_url, purpose, redirects_left - 1)  # a brand-new request
+        return result
+
+    def fetch_once(self, url: str, purpose: Purpose) -> tuple[FetchResult, str | None]:
+        """One request: ask the engine, then download. Also returns the redirect address, if any."""
         robots_txt = self.robots_for(url)
         review = load_review(site_of(url), self.reviews_dir)
         decision = can(url, purpose, review, robots_txt)
         if not decision.allowed:
-            return FetchResult(decision, url)
+            return FetchResult(decision, url, purpose), None
 
         self.wait_turn(url)
         try:
@@ -63,23 +65,34 @@ class SafeFetcher:
                 if next_url is None and status == 200:
                     content, problem = read_limited(response)
         except httpx.HTTPError:
-            return FetchResult(decision, url, problem="The site did not answer")
+            return FetchResult(decision, url, purpose, problem="The site did not answer"), None
 
         if next_url is not None:
-            if redirects_left == 0:
-                return FetchResult(decision, url, status, problem="Too many redirects")
-            return self.fetch(next_url, purpose, redirects_left - 1)  # a brand-new request
+            return FetchResult(decision, url, purpose, status, problem=f"Redirected to {next_url}"), next_url
 
-        return FetchResult(decision, url, status, content, problem)
+        page_hash = fingerprint(content) if content is not None else None
+        return FetchResult(decision, url, purpose, status, content, problem, page_hash), None
 
     def robots_for(self, url: str) -> str | None:
         """The robots.txt for a page's site: downloaded on first use, then remembered."""
         site = urlparse(url).netloc
         if site not in self.robots_cache:
-            # Reading robots.txt is always allowed, but it is still asked like any download.
-            if can(robots_url(url), Purpose.READ_TERMS).allowed:
+            # Reading robots.txt is always allowed, but it is still asked and logged like any download.
+            address = robots_url(url)
+            decision = can(address, Purpose.READ_TERMS)
+            problem, page_hash = None, None
+            if decision.allowed:
                 self.wait_turn(url)
-                self.robots_cache[site] = get_robots_txt(url, self.client)
+                robots_txt = get_robots_txt(url, self.client)
+                self.robots_cache[site] = robots_txt
+                if robots_txt is None:
+                    problem = "robots.txt could not be fetched"
+                elif robots_txt == "":
+                    problem = "No robots.txt"
+                else:
+                    page_hash = fingerprint(robots_txt.encode("utf-8"))
+            self.log.record(FetchResult(decision, address, Purpose.READ_TERMS,
+                                        problem=problem, fingerprint=page_hash))
         return self.robots_cache.get(site)
 
     def wait_turn(self, url: str) -> None:
