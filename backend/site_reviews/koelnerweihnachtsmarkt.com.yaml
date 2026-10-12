@@ -1,0 +1,38 @@
+# Site review for koelnerweihnachtsmarkt.com
+# Drafted by AI (claude-sonnet-5-5) on 2026-10-12, using backend/prompts/clause_guide.md,
+# from the terms pages listed below. Read every answer against those pages.
+# Approve by committing this file; reject by deleting it.
+reviewed_on: 2026-10-12
+terms_urls:
+- https://www.koelnerweihnachtsmarkt.com/de/impressum-2/
+- https://www.koelnerweihnachtsmarkt.com/de/datenschutz/
+automated_access:
+  answer: allow
+  because: 'Row 10: "Die Vervielfältigung, Bearbeitung, Verbreitung und sonstige Verwertung außerhalb
+    der gesetzlichen Schranken des Urheberrechts bedarf der vorherigen Zustimmung des jeweiligen Rechteinhabers."
+    (Impressum, Urheberrecht) is the standard German copyright notice and adds no restriction; no clause
+    forbids bots or automated access'
+purposes:
+  collect_facts:
+    answer: allow
+    because: 'Row 10: "Die Vervielfältigung, Bearbeitung, Verbreitung und sonstige Verwertung außerhalb
+      der gesetzlichen Schranken des Urheberrechts bedarf der vorherigen Zustimmung des jeweiligen Rechteinhabers."
+      (Impressum, Urheberrecht) only excludes what copyright law already allows; no text-and-data-mining
+      reservation or AI ban found'
+  keep_evidence:
+    answer: allow
+    because: 'Row 10: "Die Vervielfältigung, Bearbeitung, Verbreitung und sonstige Verwertung außerhalb
+      der gesetzlichen Schranken des Urheberrechts bedarf der vorherigen Zustimmung des jeweiligen Rechteinhabers."
+      (Impressum, Urheberrecht); the clause itself excludes uses within copyright limits, such as short
+      quotes, and no clause forbids quoting; the personal-use sentence ("nur für den privaten oder sonstigen
+      gesetzlich zulässigen Gebrauch") is also covered by row 9b and allows'
+  write_summary:
+    answer: allow
+    because: 'Row 10: "Die Vervielfältigung, Bearbeitung, Verbreitung und sonstige Verwertung außerhalb
+      der gesetzlichen Schranken des Urheberrechts bedarf der vorherigen Zustimmung des jeweiligen Rechteinhabers."
+      (Impressum, Urheberrecht) adds no restriction beyond copyright law; no clause forbids summaries'
+  show_link:
+    answer: allow
+    because: 'Row 10: no clause forbids linking; the Impressum only disclaims liability for external links
+      ("Haftung für externe Links"), which is irrelevant (row 13), and the standard copyright notice adds
+      no restriction'
