@@ -44,12 +44,16 @@ class SiteReview(BaseModel):
     purposes: ReviewedPurposes
 
 
-def load_review(site: str, reviews_dir: Path = REVIEWS_DIR) -> SiteReview | None:
-    """Read and check a site's approved review, or return None if it has none."""
+def review_path(site: str, reviews_dir: Path = REVIEWS_DIR) -> Path:
+    """Where a site's review lives. Refuses names that could point outside the reviews folder."""
     if not re.fullmatch(r"[a-z0-9.-]+", site):
         raise ValueError(f"Not a valid site name: {site!r}")
+    return reviews_dir / f"{site}.yaml"
 
-    path = reviews_dir / f"{site}.yaml"
+
+def load_review(site: str, reviews_dir: Path = REVIEWS_DIR) -> SiteReview | None:
+    """Read and check a site's approved review, or return None if it has none."""
+    path = review_path(site, reviews_dir)
     if not path.exists():
         return None
 
