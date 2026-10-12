@@ -11,16 +11,19 @@ def make_client(transport: httpx.BaseTransport | None = None) -> httpx.Client:
     return httpx.Client(headers={"User-Agent": BOT_USER_AGENT}, timeout=10.0, transport=transport)
 
 
+def robots_url(page_url: str) -> str:
+    """The robots.txt address for a page's site."""
+    parts = urlparse(page_url)
+    return f"{parts.scheme}://{parts.netloc}/robots.txt"
+
+
 def get_robots_txt(page_url: str, client: httpx.Client) -> str | None:
     """Download the robots.txt for a page's site, in the form the rules engine expects.
 
     Returns its text, "" if the site has none, or None if it could not be fetched (RFC 9309).
     """
-    parts = urlparse(page_url)
-    robots_url = f"{parts.scheme}://{parts.netloc}/robots.txt"
-
     try:
-        response = client.get(robots_url, follow_redirects=True)
+        response = client.get(robots_url(page_url), follow_redirects=True)
     except httpx.HTTPError:
         return None  # no answer at all: treat as everything blocked
 
