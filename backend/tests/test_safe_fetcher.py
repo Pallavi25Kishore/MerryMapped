@@ -2,7 +2,7 @@ import httpx
 import pytest
 
 from app.fetcher.robots import make_client
-from app.fetcher.safe_fetcher import SafeFetcher
+from app.fetcher.safe_fetcher import MAX_BYTES, SafeFetcher
 from app.rules.decision import Basis
 from app.rules.purposes import Purpose
 
@@ -26,20 +26,30 @@ purposes:
 class PretendSite:
     """A pretend website that records every address requested."""
 
-    def __init__(self, robots_status=404, robots_text="", page_status=200, unreachable=False):
+    def __init__(self, robots_status=404, robots_text="", page_status=200, unreachable=False,
+                 content_type="text/html", body=PAGE_HTML, headers=None, redirects=None):
         self.robots_status = robots_status
         self.robots_text = robots_text
         self.page_status = page_status
         self.unreachable = unreachable
-        self.requested = []
+        self.content_type = content_type
+        self.body = body
+        self.headers = headers or {}
+        self.redirects = redirects or {}  # path -> the address it has "moved" to
+        self.requested = []               # paths requested
+        self.requested_urls = []          # full addresses requested
 
     def answer(self, request):
         self.requested.append(request.url.path)
+        self.requested_urls.append(str(request.url))
         if request.url.path == "/robots.txt":
             return httpx.Response(self.robots_status, text=self.robots_text)
         if self.unreachable:
             raise httpx.ConnectError("site unreachable")
-        return httpx.Response(self.page_status, content=PAGE_HTML)
+        if request.url.path in self.redirects:
+            return httpx.Response(301, headers={"Location": self.redirects[request.url.path]})
+        headers = {"Content-Type": self.content_type, **self.headers}
+        return httpx.Response(self.page_status, headers=headers, content=self.body)
 
 
 class PretendClock:
@@ -132,6 +142,7 @@ def test_site_does_not_answer(tmp_path):
     assert result.decision.allowed is True
     assert result.status_code is None
     assert result.content is None
+    assert result.problem == "The site did not answer"
 
 
 # Speed limit
@@ -184,3 +195,84 @@ def test_refused_page_costs_no_wait(tmp_path):
     make_fetcher(PretendSite(), tmp_path, clock=clock).fetch(PAGE, Purpose.COLLECT_FACTS)
 
     assert clock.waits == []
+
+
+# Redirects: every new address gets a fresh engine check
+
+def test_redirect_on_the_same_site_is_followed(tmp_path):
+    site = PretendSite(redirects={"/markt/alt": PAGE})
+    fetcher = make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS)
+    result = fetcher.fetch("https://weihnachtsmarkt-koeln.de/markt/alt", Purpose.COLLECT_FACTS)
+
+    assert result.url == PAGE
+    assert result.content == PAGE_HTML
+
+
+def test_redirect_to_a_blocked_page_is_never_requested(tmp_path):
+    site = PretendSite(
+        robots_status=200,
+        robots_text="User-agent: *\nDisallow: /markt/intern\n",
+        redirects={"/markt/alt": "https://weihnachtsmarkt-koeln.de/markt/intern"},
+    )
+    fetcher = make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS)
+    result = fetcher.fetch("https://weihnachtsmarkt-koeln.de/markt/alt", Purpose.COLLECT_FACTS)
+
+    assert result.decision.allowed is False
+    assert result.decision.basis == Basis.ROBOTS_TXT
+    assert "/markt/intern" not in site.requested
+
+
+def test_redirect_to_another_site_needs_that_sites_review(tmp_path):
+    site = PretendSite(redirects={"/markt/termine": "https://other-market.de/termine"})
+    result = make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS).fetch(PAGE, Purpose.COLLECT_FACTS)
+
+    assert result.decision.allowed is False
+    assert result.decision.basis == Basis.NOT_REVIEWED
+    assert "https://other-market.de/robots.txt" in site.requested_urls
+    assert "https://other-market.de/termine" not in site.requested_urls
+
+
+def test_redirect_loop_stops(tmp_path):
+    site = PretendSite(redirects={
+        "/a": "https://weihnachtsmarkt-koeln.de/b",
+        "/b": "https://weihnachtsmarkt-koeln.de/a",
+    })
+    fetcher = make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS)
+    result = fetcher.fetch("https://weihnachtsmarkt-koeln.de/a", Purpose.COLLECT_FACTS)
+
+    assert result.content is None
+    assert result.problem == "Too many redirects"
+
+
+# Only web pages and PDFs, up to 10 MB
+
+def test_image_is_refused(tmp_path):
+    site = PretendSite(content_type="image/jpeg", body=b"\xff\xd8 pretend photo")
+    result = make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS).fetch(PAGE, Purpose.COLLECT_FACTS)
+
+    assert result.content is None
+    assert result.problem == "Not a web page or PDF (image/jpeg)"
+
+
+def test_pdf_is_accepted(tmp_path):
+    site = PretendSite(content_type="application/pdf", body=b"%PDF-1.7 pretend flyer")
+    result = make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS).fetch(PAGE, Purpose.COLLECT_FACTS)
+
+    assert result.content == b"%PDF-1.7 pretend flyer"
+
+
+def test_too_big_by_label_is_refused(tmp_path):
+    site = PretendSite(headers={"Content-Length": str(MAX_BYTES + 1)})
+    result = make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS).fetch(PAGE, Purpose.COLLECT_FACTS)
+
+    assert result.content is None
+    assert result.problem == "Larger than 10 MB"
+
+
+def test_too_big_without_label_stops_while_reading(tmp_path):
+    one_mb = b"x" * (1024 * 1024)
+    site = PretendSite(body=(one_mb for _ in range(11)))  # 11 MB in chunks, no size label
+    result = make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS).fetch(PAGE, Purpose.COLLECT_FACTS)
+
+    assert result.content is None
+    assert result.problem == "Larger than 10 MB"

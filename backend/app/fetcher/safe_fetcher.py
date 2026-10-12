@@ -1,7 +1,7 @@
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from protego import Protego
@@ -15,14 +15,20 @@ from app.rules.site_review import REVIEWS_DIR, load_review
 # Seconds between requests to the same site, unless robots.txt asks for longer.
 DEFAULT_DELAY = 5.0
 
+MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+MAX_REDIRECTS = 5
+ACCEPTED_TYPES = {"text/html", "application/xhtml+xml", "application/pdf"}
+
 
 @dataclass(frozen=True)
 class FetchResult:
     """What a fetch hands back: the engine's slip, and the page if it was downloaded."""
 
     decision: Decision
+    url: str                        # the address this result is for (after any redirects)
     status_code: int | None = None  # the site's answer (200, 404, ...); None if never downloaded
-    content: bytes | None = None    # the page, in memory only; None unless the site answered 200
+    content: bytes | None = None    # the page, in memory only; None unless it passed every check
+    problem: str | None = None      # why there is no page, even though the engine said yes
 
 
 class SafeFetcher:
@@ -37,7 +43,7 @@ class SafeFetcher:
         self.sleep = sleep
         self.last_visit: dict[str, float] = {}  # when we last requested anything from each site
 
-    def fetch(self, url: str, purpose: Purpose) -> FetchResult:
+    def fetch(self, url: str, purpose: Purpose, redirects_left: int = MAX_REDIRECTS) -> FetchResult:
         """Download a page for a purpose, only if the rules engine says yes."""
         if purpose not in FETCHES_PAGES:
             raise ValueError(f"{purpose} does not download pages")
@@ -46,16 +52,25 @@ class SafeFetcher:
         review = load_review(site_of(url), self.reviews_dir)
         decision = can(url, purpose, review, robots_txt)
         if not decision.allowed:
-            return FetchResult(decision)
+            return FetchResult(decision, url)
 
         self.wait_turn(url)
         try:
-            response = self.client.get(url)
+            with self.client.stream("GET", url) as response:
+                status = response.status_code
+                next_url = urljoin(url, response.headers["location"]) if response.is_redirect else None
+                content, problem = (None, None)
+                if next_url is None and status == 200:
+                    content, problem = read_limited(response)
         except httpx.HTTPError:
-            return FetchResult(decision)  # allowed, but the site didn't answer
+            return FetchResult(decision, url, problem="The site did not answer")
 
-        content = response.content if response.status_code == 200 else None
-        return FetchResult(decision, response.status_code, content)
+        if next_url is not None:
+            if redirects_left == 0:
+                return FetchResult(decision, url, status, problem="Too many redirects")
+            return self.fetch(next_url, purpose, redirects_left - 1)  # a brand-new request
+
+        return FetchResult(decision, url, status, content, problem)
 
     def robots_for(self, url: str) -> str | None:
         """The robots.txt for a page's site: downloaded on first use, then remembered."""
@@ -82,3 +97,22 @@ class SafeFetcher:
         robots_txt = self.robots_cache.get(site)
         crawl_delay = Protego.parse(robots_txt).crawl_delay(BOT_NAME) if robots_txt else None
         return max(DEFAULT_DELAY, crawl_delay or 0)
+
+
+def read_limited(response: httpx.Response) -> tuple[bytes | None, str | None]:
+    """Read a page only if it is a web page or PDF, stopping if it grows past 10 MB."""
+    content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
+    if content_type not in ACCEPTED_TYPES:
+        return None, f"Not a web page or PDF ({content_type or 'unknown type'})"
+
+    declared = response.headers.get("content-length", "")
+    if declared.isdigit() and int(declared) > MAX_BYTES:
+        return None, "Larger than 10 MB"
+
+    chunks, size = [], 0
+    for chunk in response.iter_bytes():
+        size += len(chunk)
+        if size > MAX_BYTES:
+            return None, "Larger than 10 MB"
+        chunks.append(chunk)
+    return b"".join(chunks), None
