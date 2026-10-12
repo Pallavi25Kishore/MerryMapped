@@ -42,12 +42,28 @@ class PretendSite:
         return httpx.Response(self.page_status, content=PAGE_HTML)
 
 
-def make_fetcher(site, tmp_path, review=None):
-    """A fetcher wired to a pretend site, with review files in a temporary folder."""
+class PretendClock:
+    """A pretend stopwatch: waiting just writes down how long and jumps forward."""
+
+    def __init__(self):
+        self.now = 0.0
+        self.waits = []
+
+    def time(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.waits.append(seconds)
+        self.now += seconds
+
+
+def make_fetcher(site, tmp_path, review=None, clock=None):
+    """A fetcher wired to a pretend site and clock, with review files in a temporary folder."""
     if review is not None:
         (tmp_path / "weihnachtsmarkt-koeln.de.yaml").write_text(review, encoding="utf-8")
     client = make_client(transport=httpx.MockTransport(site.answer))
-    return SafeFetcher(client=client, reviews_dir=tmp_path)
+    clock = clock or PretendClock()
+    return SafeFetcher(client=client, reviews_dir=tmp_path, clock=clock.time, sleep=clock.sleep)
 
 
 def test_allowed_page_is_downloaded(tmp_path):
@@ -116,3 +132,55 @@ def test_site_does_not_answer(tmp_path):
     assert result.decision.allowed is True
     assert result.status_code is None
     assert result.content is None
+
+
+# Speed limit
+
+def test_waits_the_default_delay_between_requests(tmp_path):
+    clock = PretendClock()
+    make_fetcher(PretendSite(), tmp_path, REVIEW_ALLOWING_FACTS, clock).fetch(PAGE, Purpose.COLLECT_FACTS)
+
+    assert clock.waits == [5.0]  # nothing before robots.txt (first visit), 5 s before the page
+
+
+def test_follows_a_longer_crawl_delay(tmp_path):
+    clock = PretendClock()
+    site = PretendSite(robots_status=200, robots_text="User-agent: *\nCrawl-delay: 10\n")
+    make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS, clock).fetch(PAGE, Purpose.COLLECT_FACTS)
+
+    assert clock.waits == [10.0]
+
+
+def test_keeps_the_default_when_crawl_delay_is_shorter(tmp_path):
+    clock = PretendClock()
+    site = PretendSite(robots_status=200, robots_text="User-agent: *\nCrawl-delay: 1\n")
+    make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS, clock).fetch(PAGE, Purpose.COLLECT_FACTS)
+
+    assert clock.waits == [5.0]
+
+
+def test_no_extra_wait_when_time_has_passed(tmp_path):
+    clock = PretendClock()
+    fetcher = make_fetcher(PretendSite(), tmp_path, REVIEW_ALLOWING_FACTS, clock)
+    fetcher.fetch(PAGE, Purpose.COLLECT_FACTS)
+    clock.now += 60
+    fetcher.fetch("https://weihnachtsmarkt-koeln.de/markt/anfahrt", Purpose.COLLECT_FACTS)
+
+    assert clock.waits == [5.0]  # only the first page waited
+
+
+def test_different_sites_do_not_wait_for_each_other(tmp_path):
+    clock = PretendClock()
+    fetcher = make_fetcher(PretendSite(), tmp_path, clock=clock)
+    fetcher.fetch("https://weihnachtsmarkt-koeln.de/agb", Purpose.READ_TERMS)
+    fetcher.fetch("https://christkindlesmarkt.de/agb", Purpose.READ_TERMS)
+
+    # Each site: robots.txt with no wait (first visit), then 5 s before its terms page.
+    assert clock.waits == [5.0, 5.0]
+
+
+def test_refused_page_costs_no_wait(tmp_path):
+    clock = PretendClock()
+    make_fetcher(PretendSite(), tmp_path, clock=clock).fetch(PAGE, Purpose.COLLECT_FACTS)
+
+    assert clock.waits == []
