@@ -5,7 +5,7 @@ import pytest
 from app.reading.terms_reader import DraftFailed, TermsPage, draft_review
 
 PAGE = TermsPage(
-    url="https://weihnachtsmarkt-koeln.de/agb",
+    url="https://koeln-market.example/agb",
     text="§3 Die Bearbeitung der Inhalte ist untersagt.",
 )
 
@@ -91,7 +91,7 @@ def test_pages_are_wrapped_and_labelled():
     draft_review([PAGE], client=claude)
 
     message = claude.requests[0]["messages"][0]["content"]
-    assert '<terms_page number="1" url="https://weihnachtsmarkt-koeln.de/agb">' in message
+    assert '<terms_page number="1" url="https://koeln-market.example/agb">' in message
     assert "Die Bearbeitung der Inhalte ist untersagt." in message
 
 

@@ -1,8 +1,8 @@
 from app.reading.clean import CleanPage, Link
 from app.reading.terms_finder import find_terms_pages
 
-START = "https://www.weihnachtsmarkt-koeln.de/"
-SITE = "https://www.weihnachtsmarkt-koeln.de"
+START = "https://www.koeln-market.example/"
+SITE = "https://www.koeln-market.example"
 
 
 def page_with(*links):
@@ -41,7 +41,7 @@ def test_at_most_three():
 
 
 def test_other_sites_are_ignored():
-    page = page_with(("Ticket-AGB", "https://tickets-shop.de/agb"), ("Impressum", f"{SITE}/impressum"))
+    page = page_with(("Ticket-AGB", "https://tickets-shop.example/agb"), ("Impressum", f"{SITE}/impressum"))
 
     assert find_terms_pages(page, START) == [f"{SITE}/impressum"]
 

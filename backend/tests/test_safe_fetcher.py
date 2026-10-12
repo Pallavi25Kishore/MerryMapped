@@ -9,13 +9,13 @@ from app.fetcher.visit_log import VisitLog, fingerprint
 from app.rules.decision import Basis
 from app.rules.purposes import Purpose
 
-PAGE = "https://weihnachtsmarkt-koeln.de/markt/termine"
+PAGE = "https://koeln-market.example/markt/termine"
 PAGE_HTML = b"<html><body>Opening: 20 Nov to 23 Dec</body></html>"
 
 REVIEW_ALLOWING_FACTS = """\
 reviewed_on: 2026-10-20
 terms_urls:
-  - https://weihnachtsmarkt-koeln.de/nutzungsbedingungen
+  - https://koeln-market.example/nutzungsbedingungen
 automated_access:
   answer: allow
   because: "No clause restricts bots"
@@ -73,7 +73,7 @@ class PretendClock:
 def make_fetcher(site, tmp_path, review=None, clock=None):
     """A fetcher wired to a pretend site and clock, with review files in a temporary folder."""
     if review is not None:
-        (tmp_path / "weihnachtsmarkt-koeln.de.yaml").write_text(review, encoding="utf-8")
+        (tmp_path / "koeln-market.example.yaml").write_text(review, encoding="utf-8")
     client = make_client(transport=httpx.MockTransport(site.answer))
     clock = clock or PretendClock()
     log = VisitLog(tmp_path / "visits.jsonl")  # never the real log
@@ -115,7 +115,7 @@ def test_robots_block_page_is_never_requested(tmp_path):
 
 def test_terms_can_be_read_on_a_new_site(tmp_path):
     site = PretendSite()
-    terms = "https://weihnachtsmarkt-koeln.de/nutzungsbedingungen"
+    terms = "https://koeln-market.example/nutzungsbedingungen"
     result = make_fetcher(site, tmp_path).fetch(terms, Purpose.READ_TERMS)
 
     assert result.decision.allowed is True
@@ -126,7 +126,7 @@ def test_robots_txt_is_downloaded_once_per_site(tmp_path):
     site = PretendSite()
     fetcher = make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS)
     fetcher.fetch(PAGE, Purpose.COLLECT_FACTS)
-    fetcher.fetch("https://weihnachtsmarkt-koeln.de/markt/anfahrt", Purpose.COLLECT_FACTS)
+    fetcher.fetch("https://koeln-market.example/markt/anfahrt", Purpose.COLLECT_FACTS)
 
     assert site.requested.count("/robots.txt") == 1
 
@@ -185,7 +185,7 @@ def test_no_extra_wait_when_time_has_passed(tmp_path):
     fetcher = make_fetcher(PretendSite(), tmp_path, REVIEW_ALLOWING_FACTS, clock)
     fetcher.fetch(PAGE, Purpose.COLLECT_FACTS)
     clock.now += 60
-    fetcher.fetch("https://weihnachtsmarkt-koeln.de/markt/anfahrt", Purpose.COLLECT_FACTS)
+    fetcher.fetch("https://koeln-market.example/markt/anfahrt", Purpose.COLLECT_FACTS)
 
     assert clock.waits == [5.0]  # only the first page waited
 
@@ -193,8 +193,8 @@ def test_no_extra_wait_when_time_has_passed(tmp_path):
 def test_different_sites_do_not_wait_for_each_other(tmp_path):
     clock = PretendClock()
     fetcher = make_fetcher(PretendSite(), tmp_path, clock=clock)
-    fetcher.fetch("https://weihnachtsmarkt-koeln.de/agb", Purpose.READ_TERMS)
-    fetcher.fetch("https://christkindlesmarkt.de/agb", Purpose.READ_TERMS)
+    fetcher.fetch("https://koeln-market.example/agb", Purpose.READ_TERMS)
+    fetcher.fetch("https://nuremberg-market.example/agb", Purpose.READ_TERMS)
 
     # Each site: robots.txt with no wait (first visit), then 5 s before its terms page.
     assert clock.waits == [5.0, 5.0]
@@ -212,7 +212,7 @@ def test_refused_page_costs_no_wait(tmp_path):
 def test_redirect_on_the_same_site_is_followed(tmp_path):
     site = PretendSite(redirects={"/markt/alt": PAGE})
     fetcher = make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS)
-    result = fetcher.fetch("https://weihnachtsmarkt-koeln.de/markt/alt", Purpose.COLLECT_FACTS)
+    result = fetcher.fetch("https://koeln-market.example/markt/alt", Purpose.COLLECT_FACTS)
 
     assert result.url == PAGE
     assert result.content == PAGE_HTML
@@ -222,10 +222,10 @@ def test_redirect_to_a_blocked_page_is_never_requested(tmp_path):
     site = PretendSite(
         robots_status=200,
         robots_text="User-agent: *\nDisallow: /markt/intern\n",
-        redirects={"/markt/alt": "https://weihnachtsmarkt-koeln.de/markt/intern"},
+        redirects={"/markt/alt": "https://koeln-market.example/markt/intern"},
     )
     fetcher = make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS)
-    result = fetcher.fetch("https://weihnachtsmarkt-koeln.de/markt/alt", Purpose.COLLECT_FACTS)
+    result = fetcher.fetch("https://koeln-market.example/markt/alt", Purpose.COLLECT_FACTS)
 
     assert result.decision.allowed is False
     assert result.decision.basis == Basis.ROBOTS_TXT
@@ -233,22 +233,22 @@ def test_redirect_to_a_blocked_page_is_never_requested(tmp_path):
 
 
 def test_redirect_to_another_site_needs_that_sites_review(tmp_path):
-    site = PretendSite(redirects={"/markt/termine": "https://other-market.de/termine"})
+    site = PretendSite(redirects={"/markt/termine": "https://other-market.example/termine"})
     result = make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS).fetch(PAGE, Purpose.COLLECT_FACTS)
 
     assert result.decision.allowed is False
     assert result.decision.basis == Basis.NOT_REVIEWED
-    assert "https://other-market.de/robots.txt" in site.requested_urls
-    assert "https://other-market.de/termine" not in site.requested_urls
+    assert "https://other-market.example/robots.txt" in site.requested_urls
+    assert "https://other-market.example/termine" not in site.requested_urls
 
 
 def test_redirect_loop_stops(tmp_path):
     site = PretendSite(redirects={
-        "/a": "https://weihnachtsmarkt-koeln.de/b",
-        "/b": "https://weihnachtsmarkt-koeln.de/a",
+        "/a": "https://koeln-market.example/b",
+        "/b": "https://koeln-market.example/a",
     })
     fetcher = make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS)
-    result = fetcher.fetch("https://weihnachtsmarkt-koeln.de/a", Purpose.COLLECT_FACTS)
+    result = fetcher.fetch("https://koeln-market.example/a", Purpose.COLLECT_FACTS)
 
     assert result.content is None
     assert result.problem == "Too many redirects"
@@ -300,7 +300,7 @@ def test_refusal_is_logged(tmp_path):
     make_fetcher(PretendSite(), tmp_path).fetch(PAGE, Purpose.COLLECT_FACTS)
 
     robots_line, page_line = read_log(tmp_path)
-    assert robots_line["url"] == "https://weihnachtsmarkt-koeln.de/robots.txt"
+    assert robots_line["url"] == "https://koeln-market.example/robots.txt"
     assert robots_line["allowed"] is True
     assert robots_line["problem"] == "No robots.txt"
     assert page_line["url"] == PAGE
@@ -312,7 +312,7 @@ def test_refusal_is_logged(tmp_path):
 def test_redirect_logs_each_hop(tmp_path):
     site = PretendSite(redirects={"/markt/alt": PAGE})
     make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS).fetch(
-        "https://weihnachtsmarkt-koeln.de/markt/alt", Purpose.COLLECT_FACTS)
+        "https://koeln-market.example/markt/alt", Purpose.COLLECT_FACTS)
 
     _, hop, final = read_log(tmp_path)
     assert hop["status_code"] == 301

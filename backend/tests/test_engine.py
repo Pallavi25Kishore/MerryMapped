@@ -3,8 +3,8 @@ from app.rules.engine import can
 from app.rules.purposes import Purpose
 from app.rules.site_review import SiteReview
 
-PAGE = "https://www.weihnachtsmarkt-koeln.de/markt/termine"
-INSTAGRAM = "https://www.instagram.com/weihnachtsmarkt.koeln/"
+PAGE = "https://www.koeln-market.example/markt/termine"
+INSTAGRAM = "https://www.instagram.com/example.market/"
 NO_ROBOTS = ""  # the site has no robots.txt, so robots.txt restricts nothing
 BOTS_CLAUSE = '"Automatisierte Zugriffe sind untersagt" (AGB §4)'
 
@@ -13,7 +13,7 @@ def make_review(automated_access="allow", **purposes):
     """Build a review in one line, e.g. make_review(collect_facts="allow")."""
     return SiteReview.model_validate({
         "reviewed_on": "2026-10-20",
-        "terms_urls": ["https://weihnachtsmarkt-koeln.de/nutzungsbedingungen"],
+        "terms_urls": ["https://koeln-market.example/nutzungsbedingungen"],
         "automated_access": {"answer": automated_access, "because": BOTS_CLAUSE},
         "purposes": {
             name: {"answer": answer, "because": f"Clause about {name}"}
@@ -55,7 +55,7 @@ def test_only_reading_terms_is_allowed_before_review():
 
 def test_robots_blocked_page_is_denied():
     robots = "User-agent: *\nDisallow: /markt/anmeldung\n"
-    page = "https://weihnachtsmarkt-koeln.de/markt/anmeldung"
+    page = "https://koeln-market.example/markt/anmeldung"
     decision = can(page, Purpose.COLLECT_FACTS, make_review(collect_facts="allow"), robots)
 
     assert decision.allowed is False
@@ -71,7 +71,7 @@ def test_robots_leaves_other_pages_alone():
 
 def test_robots_more_specific_line_wins():
     robots = "User-agent: *\nAllow: /\nDisallow: /markt/anmeldung\n"
-    page = "https://weihnachtsmarkt-koeln.de/markt/anmeldung"
+    page = "https://koeln-market.example/markt/anmeldung"
     decision = can(page, Purpose.COLLECT_FACTS, make_review(collect_facts="allow"), robots)
 
     assert decision.allowed is False
@@ -93,14 +93,14 @@ def test_unreachable_robots_blocks_page_downloads():
 
 
 def test_robots_txt_itself_can_always_be_read():
-    robots_page = "https://weihnachtsmarkt-koeln.de/robots.txt"
+    robots_page = "https://koeln-market.example/robots.txt"
 
     assert can(robots_page, Purpose.READ_TERMS, robots_txt=None).allowed is True
 
 
 def test_robots_also_limits_reading_terms():
     robots = "User-agent: *\nDisallow: /agb\n"
-    decision = can("https://weihnachtsmarkt-koeln.de/agb", Purpose.READ_TERMS, robots_txt=robots)
+    decision = can("https://koeln-market.example/agb", Purpose.READ_TERMS, robots_txt=robots)
 
     assert decision.allowed is False
     assert decision.basis == Basis.ROBOTS_TXT
@@ -126,7 +126,7 @@ def test_instagram_collecting_is_denied_even_if_a_review_allows_it():
 
 
 def test_instagram_with_www_counts_but_lookalikes_do_not():
-    lookalike = "https://notinstagram.com/weihnachtsmarkt"
+    lookalike = "https://notinstagram.example/weihnachtsmarkt"
 
     assert can(INSTAGRAM, Purpose.COLLECT_FACTS, robots_txt=NO_ROBOTS).basis == Basis.APP_POLICY
     assert can(lookalike, Purpose.COLLECT_FACTS, robots_txt=NO_ROBOTS).basis == Basis.NOT_REVIEWED

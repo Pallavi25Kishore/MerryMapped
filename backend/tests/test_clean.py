@@ -1,6 +1,6 @@
 from app.reading.clean import Link, clean_html
 
-PAGE_URL = "https://weihnachtsmarkt-koeln.de/"
+PAGE_URL = "https://koeln-market.example/"
 
 SAMPLE = """\
 <html>
@@ -23,8 +23,8 @@ SAMPLE = """\
   </table>
   <footer>
     <a href="/impressum">Impressum</a>
-    <a href="mailto:info@weihnachtsmarkt-koeln.de">E-Mail</a>
-    <a href="tel:+49221123456">Anrufen</a>
+    <a href="mailto:info@koeln-market.example">E-Mail</a>
+    <a href="tel:+49000000000">Anrufen</a>
   </footer>
 </body>
 </html>
@@ -58,19 +58,19 @@ def test_tables_stay_readable():
 
 
 def test_links_are_full_addresses():
-    assert Link("Impressum", "https://weihnachtsmarkt-koeln.de/impressum") in clean_sample().links
+    assert Link("Impressum", "https://koeln-market.example/impressum") in clean_sample().links
 
 
 def test_footer_links_are_kept():
     urls = [link.url for link in clean_sample().links]
 
-    assert "https://weihnachtsmarkt-koeln.de/impressum" in urls
+    assert "https://koeln-market.example/impressum" in urls
 
 
 def test_no_duplicate_links_or_section_endings():
     urls = [link.url for link in clean_sample().links]
 
-    assert urls.count("https://weihnachtsmarkt-koeln.de/programm") == 1
+    assert urls.count("https://koeln-market.example/programm") == 1
     assert not any("#" in url for url in urls)
 
 

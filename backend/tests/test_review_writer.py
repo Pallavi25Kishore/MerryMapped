@@ -6,8 +6,8 @@ from pydantic import ValidationError
 from app.reading.review_writer import write_draft
 from app.rules.site_review import load_review
 
-SITE = "weihnachtsmarkt-koeln.de"
-TERMS_URLS = ["https://weihnachtsmarkt-koeln.de/agb"]
+SITE = "koeln-market.example"
+TERMS_URLS = ["https://koeln-market.example/agb"]
 TODAY = date(2026, 10, 20)
 MODEL = "claude-sonnet-5-5"
 

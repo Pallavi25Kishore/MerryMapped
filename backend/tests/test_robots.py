@@ -2,7 +2,7 @@ import httpx
 
 from app.fetcher.robots import get_robots_txt, make_client
 
-PAGE = "https://www.weihnachtsmarkt-koeln.de/markt/termine"
+PAGE = "https://www.koeln-market.example/markt/termine"
 
 
 def pretend_site(handler):
@@ -42,8 +42,8 @@ def test_no_answer_gives_none():
 
 def test_moved_file_is_followed():
     def moved(request):
-        if request.url.host == "www.weihnachtsmarkt-koeln.de":
-            return httpx.Response(301, headers={"Location": "https://weihnachtsmarkt-koeln.de/robots.txt"})
+        if request.url.host == "www.koeln-market.example":
+            return httpx.Response(301, headers={"Location": "https://koeln-market.example/robots.txt"})
         return httpx.Response(200, text="User-agent: *\nDisallow:\n")
 
     assert get_robots_txt(PAGE, pretend_site(moved)) == "User-agent: *\nDisallow:\n"
@@ -58,7 +58,7 @@ def test_asks_for_robots_txt_on_the_pages_own_site():
 
     get_robots_txt(PAGE, pretend_site(record))
 
-    assert asked == ["https://www.weihnachtsmarkt-koeln.de/robots.txt"]
+    assert asked == ["https://www.koeln-market.example/robots.txt"]
 
 
 def test_sends_our_bot_name():

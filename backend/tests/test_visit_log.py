@@ -27,11 +27,11 @@ def test_one_character_changes_the_fingerprint():
 
 def test_log_line_has_every_box(tmp_path):
     log = VisitLog(tmp_path / "visits.jsonl")
-    log.record(FetchResult(SLIP, "https://weihnachtsmarkt-koeln.de/markt", Purpose.COLLECT_FACTS,
+    log.record(FetchResult(SLIP, "https://koeln-market.example/markt", Purpose.COLLECT_FACTS,
                            status_code=200, fingerprint="abc123"))
 
     [entry] = read_lines(tmp_path / "visits.jsonl")
-    assert entry["url"] == "https://weihnachtsmarkt-koeln.de/markt"
+    assert entry["url"] == "https://koeln-market.example/markt"
     assert entry["purpose"] == "collect_facts"
     assert entry["allowed"] is True
     assert entry["basis"] == "site_terms"
@@ -43,8 +43,8 @@ def test_log_line_has_every_box(tmp_path):
 
 def test_lines_are_added_never_overwritten(tmp_path):
     log = VisitLog(tmp_path / "visits.jsonl")
-    log.record(FetchResult(SLIP, "https://weihnachtsmarkt-koeln.de/a", Purpose.COLLECT_FACTS))
-    log.record(FetchResult(SLIP, "https://weihnachtsmarkt-koeln.de/b", Purpose.COLLECT_FACTS))
+    log.record(FetchResult(SLIP, "https://koeln-market.example/a", Purpose.COLLECT_FACTS))
+    log.record(FetchResult(SLIP, "https://koeln-market.example/b", Purpose.COLLECT_FACTS))
 
     urls = [entry["url"] for entry in read_lines(tmp_path / "visits.jsonl")]
-    assert urls == ["https://weihnachtsmarkt-koeln.de/a", "https://weihnachtsmarkt-koeln.de/b"]
+    assert urls == ["https://koeln-market.example/a", "https://koeln-market.example/b"]
