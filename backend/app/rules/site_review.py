@@ -1,7 +1,13 @@
+import re
 from datetime import date
+from pathlib import Path
 from typing import Literal
 
+import yaml
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+
+# backend/site_reviews/: one admin-approved YAML review per site.
+REVIEWS_DIR = Path(__file__).resolve().parents[2] / "site_reviews"
 
 # Every form below: no unknown boxes, no empty text, sealed once checked.
 STRICT = ConfigDict(extra="forbid", str_min_length=1, frozen=True)
@@ -36,3 +42,16 @@ class SiteReview(BaseModel):
     terms_urls: list[HttpUrl] = Field(min_length=1)
     automated_access: Answer
     purposes: ReviewedPurposes
+
+
+def load_review(site: str, reviews_dir: Path = REVIEWS_DIR) -> SiteReview | None:
+    """Read and check a site's approved review, or return None if it has none."""
+    if not re.fullmatch(r"[a-z0-9.-]+", site):
+        raise ValueError(f"Not a valid site name: {site!r}")
+
+    path = reviews_dir / f"{site}.yaml"
+    if not path.exists():
+        return None
+
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return SiteReview.model_validate(data)
