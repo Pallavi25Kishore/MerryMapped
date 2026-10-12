@@ -2,3 +2,4 @@
 # Install: pip install -r requirements.txt
 fastapi[standard]==0.143.0
 pyyaml==6.0.3
+protego==0.7.0
