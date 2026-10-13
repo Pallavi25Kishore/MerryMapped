@@ -66,7 +66,7 @@ def test_a_good_page_returns_facts_links_and_what_is_missing(tmp_path):
 
     assert outcome["status"] == "read"
     assert outcome["facts_found"] == [{"kind": "opening_date", "value": {"date": "2026-11-16"}}]
-    assert outcome["still_missing"] == ["closing_date", "hours"]
+    assert outcome["still_missing"] == ["closing_date", "hours", "address"]
     assert outcome["links"] == [{"text": "Öffnungszeiten", "url": "https://koeln-market.example/zeiten"}]
     assert outcome["pages_left"] == 9
     assert agent.facts[0]["source_url"] == START

@@ -4,13 +4,14 @@ from pathlib import Path
 
 import anthropic
 
-from app.agent.tools import TOOLS, AgentTools
+from app.agent.tools import TOOLS, TRY_HARD, AgentTools
 from app.reading.fact_checks import drop_contradictions
 from app.rules.decision import Decision
 from app.settings import ONBOARDING_AGENT_MODEL
 
 AGENT_PROMPT = Path(__file__).resolve().parents[2] / "prompts" / "onboarding_agent.md"
 MAX_ROUNDS = 15
+EXTRA_PAGES_FOR_ADDRESS = 3  # once dates and hours are found, pages left to look for the address
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,7 @@ def onboard(start_url: str, tools: AgentTools | None = None, client=None,
     messages = [{"role": "user", "content":
                  f"The market's site starts at {start_url}. You have {tools.max_pages} pages."}]
 
+    core_found_at = None  # pages used when dates and hours were all found
     for _ in range(MAX_ROUNDS):
         response = client.messages.create(model=model, max_tokens=2000,
                                           system=AGENT_PROMPT.read_text(encoding="utf-8"),
@@ -47,8 +49,13 @@ def onboard(start_url: str, tools: AgentTools | None = None, client=None,
              "content": json.dumps(run_tool(tools, call.name, call.input), ensure_ascii=False)}
             for call in calls
         ]})
-        if tools.summary is not None or not tools.missing() or tools.pages_used >= tools.max_pages:
+        missing = tools.missing()
+        if tools.summary is not None or not missing or tools.pages_used >= tools.max_pages:
             break  # finished, everything found, or no pages left: code decides, not Claude
+        if set(missing) <= set(TRY_HARD):  # only the address is missing
+            core_found_at = tools.pages_used if core_found_at is None else core_found_at
+            if tools.pages_used - core_found_at >= EXTRA_PAGES_FOR_ADDRESS:
+                break  # a serious attempt was made; the address goes to hand entry
 
     facts, contradicted = drop_contradictions(once_each(tools.facts))
     return Collected(

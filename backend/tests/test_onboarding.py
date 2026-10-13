@@ -12,6 +12,7 @@ ZEITEN = "https://koeln-market.example/zeiten"
 HOME = """<html><body><h1>Weihnachtsmarkt 2026</h1>
 <p>Geöffnet vom 16.11. bis 23.12.</p><p>Täglich 11 bis 21 Uhr.</p>
 <a href="/zeiten">Zeiten</a></body></html>""".encode()
+ANFAHRT_PAGE = """<html><body><h1>Anfahrt</h1><p>Auf dem Hauptmarkt</p></body></html>""".encode()
 ZEITEN_PAGE = """<html><body><h1>Weihnachtsmarkt 2026</h1>
 <p>Eröffnung am 17.11.</p><p>Täglich 11 bis 21 Uhr.</p></body></html>""".encode()
 
@@ -29,6 +30,8 @@ CLOSING = fact("closing_date", {"date": "2026-12-23"}, "Geöffnet vom 16.11. bis
 HOURS = fact("hours", {"days": ALL_DAYS, "opens": "11:00", "closes": "21:00"},
              "Täglich 11 bis 21 Uhr.", year_quote=None)
 LATER_OPENING = fact("opening_date", {"date": "2026-11-17"}, "Eröffnung am 17.11.")
+ADDRESS = fact("address", {"text": "Hauptmarkt"}, "Auf dem Hauptmarkt", year_quote=None)
+ANFAHRT = "https://koeln-market.example/anfahrt"
 
 
 def open_page(url):
@@ -60,21 +63,32 @@ class PretendAgentAndReader:
 
 
 def run(tmp_path, claude):
-    site = PretendSite({"/": (200, "text/html", HOME), "/zeiten": (200, "text/html", ZEITEN_PAGE)})
+    site = PretendSite({"/": (200, "text/html", HOME), "/zeiten": (200, "text/html", ZEITEN_PAGE),
+                        "/anfahrt": (200, "text/html", ANFAHRT_PAGE)})
     tools = make_tools(tmp_path, site)
     tools.client = claude
     return onboard(START, tools=tools, client=claude)
 
 
 def test_code_stops_the_search_once_everything_is_found(tmp_path):
-    claude = PretendAgentAndReader([open_page(START), open_page(ZEITEN)],
-                                   {START: [OPENING, CLOSING, HOURS]})
+    claude = PretendAgentAndReader([open_page(START), open_page(ANFAHRT), open_page(ZEITEN)],
+                                   {START: [OPENING, CLOSING, HOURS], ANFAHRT: [ADDRESS]})
     collected = run(tmp_path, claude)
 
-    assert len(claude.agent_requests) == 1
-    assert [f["kind"] for f in collected.facts] == ["opening_date", "closing_date", "hours"]
+    assert len(claude.agent_requests) == 2  # the hours page was never opened
+    assert [f["kind"] for f in collected.facts] == ["opening_date", "closing_date", "hours", "address"]
     assert collected.missing == []
     assert collected.summary == "stopped by the guardrails"
+
+
+def test_the_address_gets_three_more_pages_then_the_search_ends_without_it(tmp_path):
+    pages = [START, ZEITEN, ANFAHRT, "https://koeln-market.example/faq", "https://koeln-market.example/kontakt"]
+    claude = PretendAgentAndReader([open_page(url) for url in pages], {START: [OPENING, CLOSING, HOURS]})
+    collected = run(tmp_path, claude)
+
+    assert len(claude.agent_requests) == 4  # the start page, then 3 tries for the address
+    assert collected.missing == ["address"]
+    assert [f["kind"] for f in collected.facts] == ["opening_date", "closing_date", "hours"]
 
 
 def test_claude_can_finish(tmp_path):
@@ -83,7 +97,7 @@ def test_claude_can_finish(tmp_path):
     collected = run(tmp_path, claude)
 
     assert collected.summary == "No hours anywhere."
-    assert collected.missing == ["hours"]
+    assert collected.missing == ["hours", "address"]
 
 
 def test_the_search_stops_after_the_last_round(tmp_path):
@@ -112,4 +126,4 @@ def test_pages_that_disagree_are_both_dropped_and_reported(tmp_path):
         (START, "different opening_dates were given"),
         (ZEITEN, "different opening_dates were given"),
     ]
-    assert collected.missing == ["opening_date", "closing_date"]
+    assert collected.missing == ["opening_date", "closing_date", "address"]

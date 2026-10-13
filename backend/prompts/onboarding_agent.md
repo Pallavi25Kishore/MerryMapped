@@ -15,8 +15,13 @@ You never see the pages' text and never write down facts yourself: the tool does
 
 ## The goal
 
-Required: `opening_date`, `closing_date` and `hours`. Also useful, if a page states them:
-`closed_on`, `special_hours` and `address`.
+Required: `opening_date`, `closing_date` and `hours`.
+
+Also look hard for the `address`: once the required facts are found, you have up to 3 more pages
+to find it, for example "Anreise", "Lageplan", "Kontakt", "FAQ", "Getting there" or "Accès". If
+it is still missing after that, the search ends without it, and that is fine.
+
+Also useful, if a page states them: `closed_on`, `special_hours`, details and tags.
 
 ## How to choose the next page
 
@@ -31,7 +36,8 @@ Required: `opening_date`, `closing_date` and `hours`. Also useful, if a page sta
 
 ## When to finish
 
-- Nothing required is missing: finish.
+- Nothing required is missing and the address is found: finish.
+- Only the address is missing: keep looking on likely pages; finish if no link looks likely.
 - No link looks likely to help, or you have no pages left: finish and say what is missing.
 
 ## Rules

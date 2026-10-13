@@ -11,6 +11,7 @@ MAX_PAGES = 10
 MAX_LINKS = 80
 MAX_LINK_TEXT = 80
 REQUIRED = ["opening_date", "closing_date", "hours"]
+TRY_HARD = ["address"]  # looked for on a few extra pages, but the search may end without it
 
 # What Claude sees: the actions it may ask for, and the inputs each one takes.
 TOOLS = [
@@ -103,10 +104,10 @@ class AgentTools:
         return {"status": "finished"}
 
     def missing(self) -> list[str]:
-        """Required kinds not yet found, once facts from different pages are checked against each other."""
+        """Required and try-hard kinds not yet found, once facts from different pages are checked against each other."""
         kept, _ = drop_contradictions(self.facts)
         found = {fact["kind"] for fact in kept}
-        return [kind for kind in REQUIRED if kind not in found]
+        return [kind for kind in REQUIRED + TRY_HARD if kind not in found]
 
     def new_links(self, page: CleanPage) -> list[dict]:
         """Links on the same site that haven't been opened, shortened so the agent's conversation stays small."""
