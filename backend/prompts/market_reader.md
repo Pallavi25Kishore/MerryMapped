@@ -27,6 +27,8 @@ Every fact has:
 - `evidence_quote`: the exact words from the page that state the fact, copied character
   for character, in the page's language. One short factual sentence or one table row,
   never descriptive prose. If one sentence states several facts, use it for each of them.
+- The quote must contain every part of the value: if the fact is spread over several lines,
+  quote all of them.
 - `evidence_translation`: that quote in English, or null if the page is in English.
 
 ## The year

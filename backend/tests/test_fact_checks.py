@@ -3,6 +3,8 @@ import pytest
 from app.reading.fact_checks import check_facts, drop_contradictions, fact_problem
 
 PAGE = """Weihnachtsmarkt 2026
+Auf dem Roncalliplatz
+vor dem Kölner Dom
 Der Markt ist vom 16.11. bis 6.1. geöffnet.
 Öffnungszeiten: täglich 11 bis 22 Uhr.
 Weihnachtsmarkt 2025: 17.11. bis 23.12."""
@@ -170,3 +172,17 @@ def test_the_same_closed_day_stated_twice_is_kept():
 
     assert len(kept) == 2
     assert dropped == []
+
+
+def address(text):
+    return fact("address", {"text": text}, quote="Auf dem Roncalliplatz", year_quote=None)
+
+
+def test_an_address_spread_over_two_lines_passes():
+    assert fact_problem(address("Roncalliplatz vor dem Kölner Dom"), PAGE) is None
+
+
+def test_an_address_not_on_the_page_is_caught():
+    assert fact_problem(address("Roncalliplatz 1, 50667 Köln"), PAGE) == (
+        "address is not written on the page as given"
+    )

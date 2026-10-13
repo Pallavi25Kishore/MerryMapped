@@ -37,6 +37,8 @@ def fact_problem(fact: dict, page_text: str) -> str | None:
         return f"{kind} needs {sorted(NEEDS[kind])}, got {sorted(fields)}"
     if not all(value.get(field) for field in fields):
         return "a value field is empty"
+    if kind == "address" and tidy(value["text"]) not in page:
+        return "address is not written on the page as given"
 
     # 4: real dates and times.
     dates = {}
