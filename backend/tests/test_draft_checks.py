@@ -151,3 +151,11 @@ def test_facts_denied_but_summary_allowed_is_refused():
         "keep_evidence: must be deny, because it follows from an earlier deny",
         "write_summary: must be deny, because it follows from an earlier deny",
     ]
+
+
+def test_an_english_translation_in_brackets_passes():
+    draft = good_draft()
+    draft["purposes"]["write_summary"] = answer(
+        "allow", 'Row 6: "Die Bearbeitung der Inhalte ist untersagt." [English: adapting the content is forbidden] (§3)')
+
+    assert check_draft(draft, TERMS) == []

@@ -178,7 +178,9 @@ Never write `read_terms` or `copy_text_or_photos`: engine rules decide those.
 
 ## General rules
 
-1. **Quote exactly**, in the original language, with the section if there is one.
+1. **Quote exactly**, in the original language, with the section if there is one. If the quote is
+   not in English, follow it with an English translation in square brackets, without quotation
+   marks: `"Vervielfältigung untersagt" [English: reproduction is forbidden]`.
 2. **Several clauses apply:** deny beats allow, answer by answer.
 3. **When A or C is denied,** also write E and S (and C, if A is denied) as deny, with `because`
    saying which row they follow from, so the review always shows the real outcome.
@@ -201,7 +203,8 @@ collect_facts:
   because: "Row 1: terms reviewed, no clause restricts collecting facts"
 write_summary:
   answer: deny
-  because: 'Row 6b: "Zusammenfassungen der Inhalte sind nicht gestattet" (Nutzungsbedingungen §5)'
+  because: 'Row 6b: "Zusammenfassungen der Inhalte sind nicht gestattet" [English: summaries of the
+    content are not allowed] (Nutzungsbedingungen §5)'
 ```
 
 A site whose terms forbid bots:
@@ -209,7 +212,8 @@ A site whose terms forbid bots:
 ```yaml
 automated_access:
   answer: deny
-  because: 'Row 2: "Automatisierte Zugriffe sind untersagt" (AGB §4)'
+  because: 'Row 2: "Automatisierte Zugriffe sind untersagt" [English: automated access is forbidden]
+    (AGB §4)'
 keep_evidence:
   answer: deny
   because: "Follows from row 2: automated access is denied"
