@@ -68,7 +68,7 @@ def fact_problem(fact: dict, page_text: str) -> str | None:
 
 
 def check_facts(facts: list[dict], page_text: str) -> tuple[list[dict], list[tuple[dict, str]]]:
-    """All 8 checks: the facts that passed, and the dropped facts with the reason for each."""
+    """All checks on one page: the facts that passed, and the dropped facts with the reason for each."""
     kept, dropped = [], []
     for fact in facts:
         problem = fact_problem(fact, page_text)
@@ -76,14 +76,21 @@ def check_facts(facts: list[dict], page_text: str) -> tuple[list[dict], list[tup
             dropped.append((fact, problem))
         else:
             kept.append(fact)
+    kept, contradicted = drop_contradictions(kept)
+    return kept, dropped + contradicted
 
-    # 8: the page gives two different opening dates (or closing dates): drop them all.
+
+def drop_contradictions(facts: list[dict]) -> tuple[list[dict], list[tuple[dict, str]]]:
+    """Checks 7 to 9 on facts that each passed checks 1 to 6, from one page or from several."""
+    kept, dropped = list(facts), []
+
+    # 8: two different opening dates (or closing dates): drop them all.
     for kind in ("opening_date", "closing_date"):
         same_kind = [fact for fact in kept if fact["kind"] == kind]
         if len({fact["value"]["date"] for fact in same_kind}) > 1:
             for fact in same_kind:
                 kept.remove(fact)
-                dropped.append((fact, f"the page gives different {kind}s"))
+                dropped.append((fact, f"different {kind}s were given"))
 
     # 7: the opening date is not after the closing date.
     opening = next((f for f in kept if f["kind"] == "opening_date"), None)
@@ -93,4 +100,23 @@ def check_facts(facts: list[dict], page_text: str) -> tuple[list[dict], list[tup
             kept.remove(fact)
             dropped.append((fact, "opening date is after closing date"))
 
+    # 9: two hours facts for the same weekday in the same period, with different times.
+    hours = [fact for fact in kept if fact["kind"] == "hours"]
+    clashing = [
+        fact for fact in hours
+        if any(other is not fact and hours_clash(fact["value"], other["value"]) for other in hours)
+    ]
+    for fact in clashing:
+        kept.remove(fact)
+        dropped.append((fact, "different hours were given for the same days"))
+
     return kept, dropped
+
+
+def hours_clash(a: dict, b: dict) -> bool:
+    """Same weekday, overlapping dates, different times."""
+    same_day = set(a["days"]) & set(b["days"])
+    a_from, a_until = a.get("from", str(SEASON_START)), a.get("until", str(SEASON_END))
+    b_from, b_until = b.get("from", str(SEASON_START)), b.get("until", str(SEASON_END))
+    overlap = a_from <= b_until and b_from <= a_until
+    return bool(same_day) and overlap and (a["opens"], a["closes"]) != (b["opens"], b["closes"])

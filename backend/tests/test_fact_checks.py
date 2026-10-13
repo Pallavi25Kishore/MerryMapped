@@ -1,6 +1,6 @@
 import pytest
 
-from app.reading.fact_checks import check_facts, fact_problem
+from app.reading.fact_checks import check_facts, drop_contradictions, fact_problem
 
 PAGE = """Weihnachtsmarkt 2026
 Der Markt ist vom 16.11. bis 6.1. geöffnet.
@@ -90,7 +90,7 @@ def test_different_opening_dates_are_all_dropped():
     kept, dropped = check_facts([opening("2026-11-16"), opening("2026-11-17"), hours()], PAGE)
 
     assert kept == [hours()]
-    assert [reason for _, reason in dropped] == ["the page gives different opening_dates"] * 2
+    assert [reason for _, reason in dropped] == ["different opening_dates were given"] * 2
 
 
 def test_the_same_date_stated_twice_is_kept():
@@ -111,3 +111,36 @@ def test_a_one_day_market_is_kept():
     kept, _ = check_facts([opening("2026-12-05"), closing("2026-12-05")], PAGE)
 
     assert len(kept) == 2
+
+
+def test_hours_clashing_on_the_same_day_are_dropped():
+    mon_thu = hours(days=["mon", "tue", "wed", "thu"])
+    mon_fri = hours(days=["mon", "tue", "wed", "thu", "fri"], opens="12:00", closes="20:00")
+    kept, dropped = drop_contradictions([mon_thu, mon_fri])
+
+    assert kept == []
+    assert [reason for _, reason in dropped] == ["different hours were given for the same days"] * 2
+
+
+def test_the_same_hours_stated_twice_are_kept():
+    kept, dropped = drop_contradictions([hours(), hours()])
+
+    assert len(kept) == 2
+    assert dropped == []
+
+
+def test_different_hours_in_separate_periods_are_kept():
+    before = hours(until="2026-12-23")
+    after = hours(opens="12:00", closes="18:00", **{"from": "2026-12-26"})
+    kept, dropped = drop_contradictions([before, after])
+
+    assert kept == [before, after]
+    assert dropped == []
+
+
+def test_different_days_with_different_hours_are_kept():
+    weekdays = hours(days=["mon", "tue", "wed", "thu"])
+    weekend = hours(days=["fri", "sat"], closes="23:00")
+    kept, _ = drop_contradictions([weekdays, weekend])
+
+    assert kept == [weekdays, weekend]
