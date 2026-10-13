@@ -3,6 +3,7 @@ from pathlib import Path
 
 import anthropic
 
+from app.reading.fact_checks import MAY_ALSO, NEEDS
 from app.settings import MARKET_READER_MODEL
 
 MARKET_READER_PROMPT = Path(__file__).resolve().parents[2] / "prompts" / "market_reader.md"
@@ -87,7 +88,7 @@ def read_page(url: str, text: str, client=None, model: str = MARKET_READER_MODEL
     )
     reply = next(block.text for block in response.content if block.type == "text")
     facts = json.loads(reply)["facts"]
-    return [{**fact, "value": tidy_value(fact["value"])} for fact in facts]
+    return [{**fact, "value": tidy_value(fact["value"], fact["kind"])} for fact in facts]
 
 
 def page_message(url: str, text: str) -> str:
@@ -95,6 +96,8 @@ def page_message(url: str, text: str) -> str:
     return f'Write down the facts this page states.\n\n<market_page url="{url}">\n{text}\n</market_page>'
 
 
-def tidy_value(value: dict) -> dict:
-    """Drop the fields Claude set to null: {"date": "2026-11-16", "days": None, ...} -> {"date": ...}."""
-    return {field: content for field, content in value.items() if content is not None}
+def tidy_value(value: dict, kind: str) -> dict:
+    """Keep only the filled-in fields this kind of fact uses: a tag keeps "tag", a date keeps "date".
+    Fields Claude set to null, or filled in although the kind doesn't use them, are dropped."""
+    fields = NEEDS[kind] | MAY_ALSO.get(kind, set())
+    return {field: content for field, content in value.items() if content is not None and field in fields}

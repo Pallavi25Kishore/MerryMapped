@@ -67,3 +67,11 @@ def test_every_tag_is_explained_in_the_prompt_the_same_way():
 
     for tag, meaning in TAGS.items():
         assert re.search(rf"\| `{re.escape(tag)}` +\| {re.escape(meaning)} +\|", prompt), tag
+
+
+def test_fields_a_kind_does_not_use_are_dropped_before_the_checks():
+    tag = {"kind": "tag", "value": {**EMPTY_VALUE, "tag": "old-town", "text": "Market in the old town"},
+           "evidence_quote": "die gesamte Altstadt", "evidence_translation": None, "year_quote": None}
+
+    facts = read_page(URL, TEXT, client=PretendClaude({"facts": [tag]}))
+    assert facts[0]["value"] == {"tag": "old-town"}
