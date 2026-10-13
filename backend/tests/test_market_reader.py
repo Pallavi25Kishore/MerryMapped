@@ -1,7 +1,8 @@
 import json
+import re
 from types import SimpleNamespace
 
-from app.reading.market_reader import FACTS_SCHEMA, read_page
+from app.reading.market_reader import FACTS_SCHEMA, MARKET_READER_PROMPT, TAGS, read_page
 
 URL = "https://koeln-market.example/de/zeiten/"
 TEXT = "Weihnachtsmarkt 2026\nDer Markt ist vom 16.11. bis 23.12. geöffnet."
@@ -59,3 +60,10 @@ def test_the_form_offers_details_and_only_the_fixed_tags():
     tags = text_or_null[0]["enum"]
     assert "artisan" in tags
     assert "romantic" not in tags
+
+
+def test_every_tag_is_explained_in_the_prompt_the_same_way():
+    prompt = MARKET_READER_PROMPT.read_text(encoding="utf-8")
+
+    for tag, meaning in TAGS.items():
+        assert re.search(rf"\| `{re.escape(tag)}` +\| {re.escape(meaning)} +\|", prompt), tag

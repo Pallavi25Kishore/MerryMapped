@@ -29,7 +29,7 @@ def test_report_shows_facts_dropped_facts_and_what_is_missing():
     assert 'opening_date: {"date": "2026-11-16"}' in text
     assert 'quote: "Mo 16.11.2026"' in text
     assert 'English: "Mon 16.11.2026"' in text
-    assert f"closing_date: date 2025-12-23 is outside the 2026 season ({WEBSITE})" in text
+    assert 'closing_date: {"date": "2025-12-23"}\n    dropped: date 2025-12-23 is outside the 2026 season' in text
     assert "Missing: closing_date, hours (enter by hand)" in text
 
 

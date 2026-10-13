@@ -9,14 +9,33 @@ MARKET_READER_PROMPT = Path(__file__).resolve().parents[2] / "prompts" / "market
 
 KINDS = ["opening_date", "closing_date", "hours", "closed_on", "special_hours", "address", "detail", "tag"]
 WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
-TAGS = [
-    "old-town", "cathedral", "castle", "riverside", "park-or-forest", "underground",      # setting
-    "medieval", "light-show", "traditional", "modern-design", "sustainable",              # theme
-    "artisan", "food-focused", "regional-food", "wine", "vegan-options", "live-music",    # on offer
-    "stage-programme", "ice-rink", "rides", "nativity",
-    "family", "accessible",                                                               # who it suits
-    "paid-entry",                                                                         # practical
-]
+# The fixed tags, each with what the page must show. The same list is in prompts/market_reader.md.
+TAGS = {
+    "old-town": "it is in a historic old town or square",
+    "cathedral": "it is at a cathedral, minster or major church",
+    "castle": "it is at or in a castle, palace or fortress",
+    "riverside": "it is on a river, lake or harbour",
+    "park-or-forest": "it is in a park, garden or forest",
+    "underground": "it is in cellars, caves or vaults",
+    "medieval": "a medieval theme: costumes, old crafts, period music",
+    "light-show": "illuminations, light installations or a light canopy",
+    "traditional": "it describes itself as traditional or historic",
+    "modern-design": "it is modern, design-led or contemporary",
+    "sustainable": "a sustainability focus or certification",
+    "artisan": "handcrafts and makers",
+    "food-focused": "food is a main draw",
+    "regional-food": "regional specialities are named",
+    "wine": "it is wine-focused, beyond mulled wine",
+    "vegan-options": "vegan food is stated",
+    "live-music": "concerts or regular live music",
+    "stage-programme": "a stage with a daily programme",
+    "ice-rink": "a skating rink",
+    "rides": "a Ferris wheel, carousel or other rides",
+    "nativity": "a nativity scene or living nativity",
+    "family": "a children's programme or children's area",
+    "accessible": "wheelchair access is stated",
+    "paid-entry": "an entry fee is charged",
+}
 
 # The shape Claude's answer must have. "value" has every possible field; Claude fills the ones
 # that apply to the kind of fact and sets the rest to null.
@@ -29,7 +48,7 @@ VALUE_FIELDS = {
     "from": NULLABLE_TEXT,
     "until": NULLABLE_TEXT,
     "text": NULLABLE_TEXT,
-    "tag": {"anyOf": [{"type": "string", "enum": TAGS}, {"type": "null"}]},
+    "tag": {"anyOf": [{"type": "string", "enum": list(TAGS)}, {"type": "null"}]},
 }
 FACT = {
     "type": "object",

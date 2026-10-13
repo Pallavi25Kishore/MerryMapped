@@ -25,7 +25,11 @@ def report(collected: Collected) -> str:
             lines.append(f'    English: "{fact["evidence_translation"]}"')
         lines.append(f"    page: {fact['source_url']}")
     lines += ["", f"Facts dropped ({len(collected.dropped)}):"]
-    lines += [f"  {fact['kind']}: {reason} ({page})" for page, fact, reason in collected.dropped]
+    for page, fact, reason in collected.dropped:
+        lines.append(f"  {fact['kind']}: {json.dumps(fact['value'], ensure_ascii=False)}")
+        lines.append(f"    dropped: {reason}")
+        lines.append(f'    quote: "{fact["evidence_quote"]}"')
+        lines.append(f"    page: {page}")
     missing = ", ".join(collected.missing) + " (enter by hand)" if collected.missing else "nothing"
     return "\n".join(lines + ["", f"Missing: {missing}"])
 

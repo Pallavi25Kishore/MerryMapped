@@ -84,5 +84,6 @@ def test_the_facts_are_sent_without_the_hours():
     assert "Closed: 2026-11-22" in sent
     assert "Where: Roncalliplatz" in sent
     assert "Details: over 140 stalls" in sent
-    assert "Tags: artisan" in sent
+    assert "Features: handcrafts and makers" in sent
+    assert "artisan" not in sent
     assert "10:00" not in sent

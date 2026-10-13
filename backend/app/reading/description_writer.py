@@ -4,6 +4,7 @@ from pathlib import Path
 
 import anthropic
 
+from app.reading.market_reader import TAGS
 from app.reading.overlap import copied_phrases
 from app.settings import DESCRIPTION_WRITER_MODEL
 
@@ -71,5 +72,5 @@ def facts_message(name: str, city: str, country: str, facts: list[dict]) -> str:
     if details := values("detail"):
         lines.append("Details: " + "; ".join(value["text"] for value in details))
     if tags := values("tag"):
-        lines.append("Tags: " + ", ".join(value["tag"] for value in tags))
+        lines.append("Features: " + "; ".join(TAGS[value["tag"]] for value in tags))
     return "Write the description from these facts.\n\n<market_facts>\n" + "\n".join(lines) + "\n</market_facts>"
