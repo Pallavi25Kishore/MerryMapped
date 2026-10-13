@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.connection import make_engine
-from app.db.models import Fact, Market, create_tables
+from app.db.models import Fact, Market, TrainLink, create_tables
 
 WEBSITE = "https://koeln-market.example/de/"
 
@@ -64,3 +64,27 @@ def test_a_new_fact_is_marked_checked(session):
     session.add(opening_fact(market))
     session.commit()
     assert session.scalars(select(Fact)).one().status == "checked"
+
+
+def train_link(day=date(2026, 12, 19)):
+    leg = {"from": "Köln Hbf", "to": "Karlsruhe Hbf", "depart": 774, "arrive": 899, "feed": "germany_long_distance"}
+    return TrainLink(
+        from_city="Köln", to_city="Strasbourg", day=day, journeys=[[leg]],
+        fastest_minutes=191, fewest_changes=1, trips_per_day=15,
+        first_departure=201, last_departure=1193,
+        source="estimate", based_on_day=date(2026, 11, 7), checked_on=date(2026, 10, 13),
+    )
+
+
+def test_train_link_is_saved_and_read_back(session):
+    session.add(train_link())
+    session.commit()
+    saved = session.scalars(select(TrainLink)).one()
+    assert saved.journeys[0][0]["to"] == "Karlsruhe Hbf"
+    assert (saved.source, saved.based_on_day) == ("estimate", date(2026, 11, 7))
+
+
+def test_one_train_link_per_pair_and_day(session):
+    session.add_all([train_link(), train_link()])
+    with pytest.raises(IntegrityError):
+        session.commit()
