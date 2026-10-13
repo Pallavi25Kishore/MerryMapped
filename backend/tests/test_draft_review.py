@@ -136,3 +136,37 @@ def test_the_review_notes_what_robots_txt_said(tmp_path):
     path = run(tmp_path, site, PretendClaude(GOOD_FORM))
 
     assert "#   no robots.txt, so no restrictions." in path.read_text(encoding="utf-8")
+
+
+def test_a_site_whose_robots_txt_blocks_us_gets_a_link_only_review(tmp_path):
+    site = PretendSite({"/": (200, "text/html", START_PAGE)},
+                       robots_text="User-agent: GPTBot\nDisallow: /\n")
+    claude = PretendClaude(GOOD_FORM)
+    path = run(tmp_path, site, claude)
+
+    review = load_review(SITE, reviews_dir=tmp_path / "site_reviews")
+    assert review.automated_access.answer == "deny"
+    assert review.purposes.collect_facts.answer == "deny"
+    assert review.purposes.show_link.answer == "allow"
+    assert [str(url) for url in review.terms_urls] == ["https://koeln-market.example/robots.txt"]
+    assert "Written by code" in path.read_text(encoding="utf-8")
+    assert claude.requests == []          # no AI was asked
+    assert site.requested == ["/robots.txt"]  # the page itself was never downloaded
+
+
+class UnreachableRobots(PretendSite):
+    """A site whose robots.txt answers with a server error."""
+
+    def answer(self, request):
+        if request.url.path == "/robots.txt":
+            self.requested.append(request.url.path)
+            return httpx.Response(503)
+        return super().answer(request)
+
+
+def test_an_unreachable_robots_txt_stops_without_a_review(tmp_path):
+    site = UnreachableRobots({"/": (200, "text/html", START_PAGE)})
+
+    with pytest.raises(DraftStopped, match="robots.txt could not be checked"):
+        run(tmp_path, site, PretendClaude(GOOD_FORM))
+    assert not (tmp_path / "site_reviews" / f"{SITE}.yaml").exists()

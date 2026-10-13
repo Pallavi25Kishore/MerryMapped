@@ -4,9 +4,11 @@ from pathlib import Path
 
 from app.fetcher.safe_fetcher import SafeFetcher
 from app.reading.clean import clean_html
-from app.reading.review_writer import write_draft
+from app.fetcher.robots import robots_url
+from app.reading.review_writer import write_blocked, write_draft
 from app.reading.terms_finder import find_terms_pages
 from app.reading.terms_reader import DraftFailed, TermsPage, draft_review
+from app.rules.decision import Basis
 from app.rules.engine import robots_note, site_of
 from app.rules.purposes import Purpose
 from app.rules.site_review import REVIEWS_DIR, review_path
@@ -26,6 +28,11 @@ def draft_site_review(start_url: str, fetcher: SafeFetcher | None = None, client
         raise DraftStopped(f"{site} already has a review; delete it first to re-draft")
 
     start = fetcher.fetch(start_url, Purpose.READ_TERMS)
+    robots_txt = fetcher.robots_for(start_url)
+    if blocked_by_robots(start, robots_txt):
+        print(f"robots.txt blocks this site: {start.decision.reason}. Writing a link-only review.")
+        return write_blocked(site, robots_url(start_url), start.decision.reason,
+                             robots_note(start_url, robots_txt), reviews_dir, today)
     if start.content is None:
         raise DraftStopped(f"Start page could not be read: {why(start)}")
     links = find_terms_pages(clean_html(start.content, start.url), start.url)
@@ -46,6 +53,12 @@ def draft_site_review(start_url: str, fetcher: SafeFetcher | None = None, client
     terms_urls = [page.url for page in pages] or [start.url]
     robots = robots_note(start.url, fetcher.robots_for(start.url))
     return write_draft(site, draft, terms_urls, TERMS_READER_MODEL, reviews_dir, today, robots)
+
+
+def blocked_by_robots(result, robots_txt: str | None) -> bool:
+    """True if robots.txt was read and blocks the page; an unreachable robots.txt is only temporary."""
+    refused = not result.decision.allowed and result.decision.basis == Basis.ROBOTS_TXT
+    return refused and robots_txt is not None
 
 
 def why(result) -> str:
