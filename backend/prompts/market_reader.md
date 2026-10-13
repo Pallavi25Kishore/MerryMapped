@@ -28,6 +28,9 @@ fact is fine and a wrong fact is not.
 
 - A `detail` is a short English phrase in your own words, at most 10 words: size, programme,
   food and drink, setting or special features.
+- One detail per quote: a detail may say only what its own quote says. If the page states several
+  things (green electricity, LED lights, reusable cups), write a separate detail for each, each
+  with its own quote.
 - Details describe the market as a whole: turn what single stalls or events offer into what the
   market offers ("Stand 42: Glühwein" becomes "mulled wine"), claim no more than the page shows,
   and never name a single stall, shop or performance time.
