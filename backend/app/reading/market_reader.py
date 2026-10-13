@@ -7,8 +7,16 @@ from app.settings import MARKET_READER_MODEL
 
 MARKET_READER_PROMPT = Path(__file__).resolve().parents[2] / "prompts" / "market_reader.md"
 
-KINDS = ["opening_date", "closing_date", "hours", "closed_on", "special_hours", "address"]
+KINDS = ["opening_date", "closing_date", "hours", "closed_on", "special_hours", "address", "detail", "tag"]
 WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+TAGS = [
+    "old-town", "cathedral", "castle", "riverside", "park-or-forest", "underground",      # setting
+    "medieval", "light-show", "traditional", "modern-design", "sustainable",              # theme
+    "artisan", "food-focused", "regional-food", "wine", "vegan-options", "live-music",    # on offer
+    "stage-programme", "ice-rink", "rides", "nativity",
+    "family", "accessible",                                                               # who it suits
+    "paid-entry",                                                                         # practical
+]
 
 # The shape Claude's answer must have. "value" has every possible field; Claude fills the ones
 # that apply to the kind of fact and sets the rest to null.
@@ -21,6 +29,7 @@ VALUE_FIELDS = {
     "from": NULLABLE_TEXT,
     "until": NULLABLE_TEXT,
     "text": NULLABLE_TEXT,
+    "tag": {"type": ["string", "null"], "enum": [*TAGS, None]},
 }
 FACT = {
     "type": "object",

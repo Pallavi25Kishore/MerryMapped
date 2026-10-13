@@ -5,6 +5,8 @@ from datetime import date
 from app.reading.draft_checks import tidy
 
 MAX_QUOTE = 300
+MAX_SHORT_QUOTE = 100  # details and tags quote only the words that state them
+MAX_DETAIL = 80
 SEASON_START, SEASON_END = date(2026, 10, 15), date(2027, 1, 31)
 SEASON_YEAR = 2026
 TIME = re.compile(r"^(([01]\d|2[0-3]):[0-5]\d|24:00)$")
@@ -17,6 +19,8 @@ NEEDS = {
     "closed_on": {"date"},
     "special_hours": {"date", "opens", "closes"},
     "address": {"text"},
+    "detail": {"text"},
+    "tag": {"tag"},
 }
 MAY_ALSO = {"hours": {"from", "until"}}
 
@@ -30,6 +34,8 @@ def fact_problem(fact: dict, page_text: str) -> str | None:
         return "evidence quote not found on the page"
     if len(quote) > MAX_QUOTE:
         return f"evidence quote is longer than {MAX_QUOTE} characters"
+    if kind in ("detail", "tag") and len(quote) > MAX_SHORT_QUOTE:
+        return f"evidence quote for a {kind} is longer than {MAX_SHORT_QUOTE} characters"
 
     # 3: the right fields for this kind of fact.
     fields = set(value)
@@ -39,6 +45,8 @@ def fact_problem(fact: dict, page_text: str) -> str | None:
         return "a value field is empty"
     if kind == "address" and tidy(value["text"]) not in page:
         return "address is not written on the page as given"
+    if kind == "detail" and len(value["text"]) > MAX_DETAIL:
+        return f"detail is longer than {MAX_DETAIL} characters"
 
     # 4: real dates and times.
     dates = {}

@@ -6,7 +6,7 @@ from app.reading.market_reader import FACTS_SCHEMA, read_page
 URL = "https://koeln-market.example/de/zeiten/"
 TEXT = "Weihnachtsmarkt 2026\nDer Markt ist vom 16.11. bis 23.12. geöffnet."
 
-EMPTY_VALUE = dict.fromkeys(["date", "days", "opens", "closes", "from", "until", "text"])
+EMPTY_VALUE = dict.fromkeys(["date", "days", "opens", "closes", "from", "until", "text", "tag"])
 OPENING = {
     "kind": "opening_date",
     "value": {**EMPTY_VALUE, "date": "2026-11-16"},
@@ -48,3 +48,12 @@ def test_request_uses_the_prompt_the_schema_and_the_page_tags():
 
 def test_a_page_without_facts_gives_an_empty_list():
     assert read_page(URL, TEXT, client=PretendClaude({"facts": []})) == []
+
+
+def test_the_form_offers_details_and_only_the_fixed_tags():
+    fact = FACTS_SCHEMA["properties"]["facts"]["items"]["properties"]
+
+    assert {"detail", "tag"} <= set(fact["kind"]["enum"])
+    tags = fact["value"]["properties"]["tag"]["enum"]
+    assert "artisan" in tags and None in tags
+    assert "romantic" not in tags

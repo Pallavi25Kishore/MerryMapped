@@ -15,7 +15,7 @@ HOME = """<html><body><h1>Weihnachtsmarkt 2026</h1>
 ZEITEN_PAGE = """<html><body><h1>Weihnachtsmarkt 2026</h1>
 <p>Eröffnung am 17.11.</p><p>Täglich 11 bis 21 Uhr.</p></body></html>""".encode()
 
-EMPTY_VALUE = dict.fromkeys(["date", "days", "opens", "closes", "from", "until", "text"])
+EMPTY_VALUE = dict.fromkeys(["date", "days", "opens", "closes", "from", "until", "text", "tag"])
 ALL_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 

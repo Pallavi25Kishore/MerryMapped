@@ -5,6 +5,7 @@ from app.reading.fact_checks import check_facts, drop_contradictions, fact_probl
 PAGE = """Weihnachtsmarkt 2026
 Auf dem Roncalliplatz
 vor dem Kölner Dom
+Über 140 festlich geschmückte Stände mit Kunsthandwerk und Geschenken, aber auch mit Gastronomie und jeder Menge sozialem Engagement.
 Der Markt ist vom 16.11. bis 6.1. geöffnet.
 Öffnungszeiten: täglich 11 bis 22 Uhr.
 Weihnachtsmarkt 2025: 17.11. bis 23.12."""
@@ -185,4 +186,35 @@ def test_an_address_spread_over_two_lines_passes():
 def test_an_address_not_on_the_page_is_caught():
     assert fact_problem(address("Roncalliplatz 1, 50667 Köln"), PAGE) == (
         "address is not written on the page as given"
+    )
+
+
+STALLS = "Über 140 festlich geschmückte Stände"
+
+
+def detail(text, quote=STALLS):
+    return fact("detail", {"text": text}, quote=quote, year_quote=None)
+
+
+def test_good_details_and_tags_pass():
+    assert fact_problem(detail("over 140 stalls"), PAGE) is None
+    assert fact_problem(fact("tag", {"tag": "artisan"}, quote="Kunsthandwerk", year_quote=None), PAGE) is None
+
+
+def test_a_whole_descriptive_sentence_is_too_long_as_proof():
+    sentence = next(line for line in PAGE.splitlines() if line.startswith(STALLS))
+    assert fact_problem(detail("over 140 stalls", quote=sentence), PAGE) == (
+        "evidence quote for a detail is longer than 100 characters"
+    )
+
+
+def test_a_long_detail_is_caught():
+    assert fact_problem(detail("over 140 festively decorated stalls " * 3), PAGE) == (
+        "detail is longer than 80 characters"
+    )
+
+
+def test_a_tag_needs_the_tag_field():
+    assert fact_problem(fact("tag", {"text": "artisan"}, quote="Kunsthandwerk", year_quote=None), PAGE) == (
+        "tag needs ['tag'], got ['text']"
     )
