@@ -30,8 +30,11 @@ def report(collected: Collected) -> str:
         lines.append(f"    dropped: {reason}")
         lines.append(f'    quote: "{fact["evidence_quote"]}"')
         lines.append(f"    page: {page}")
-    notes = {"address": "address (the city is used instead)"}
-    missing = ", ".join(notes.get(kind, f"{kind} (enter by hand)") for kind in collected.missing) or "nothing"
+    by_hand = [kind for kind in collected.missing if kind != "address"]
+    parts = [", ".join(by_hand) + " (enter by hand)"] if by_hand else []
+    if "address" in collected.missing:
+        parts.append("address (the city is used instead)")
+    missing = "; ".join(parts) or "nothing"
     return "\n".join(lines + ["", f"Missing: {missing}"])
 
 
