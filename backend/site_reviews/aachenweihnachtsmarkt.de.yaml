@@ -1,0 +1,40 @@
+# Site review for aachenweihnachtsmarkt.de
+# Drafted by AI (claude-sonnet-5-5) on 2026-10-13, using backend/prompts/clause_guide.md,
+# from the terms pages listed below. Read every answer against those pages.
+# robots.txt on 2026-10-13 (for information; the engine checks the current one on every visit):
+#   found; MerryMappedBot may fetch the start page; no AI bots blocked; no crawl delay.
+# Approve by committing this file; reject by deleting it.
+reviewed_on: 2026-10-13
+terms_urls:
+- https://aachenweihnachtsmarkt.de/de/seiten/impressum/
+automated_access:
+  answer: allow
+  because: 'Row 5: "dürfen nicht ohne die schriftliche Genehmigung vervielfältigt, vorgeführt oder verarbeitet
+    werden" (Impressum, Urheberrecht). This names legal acts (reproduction, performance, adaptation),
+    not bots, so it does not restrict visiting the pages. No clause bans automated access.'
+purposes:
+  collect_facts:
+    answer: allow
+    because: 'Row 5: "Die auf diesen Internetseiten dargestellten Informationen, Grafiken, Layouts und
+      Bilder unterliegen dem Urheberrecht und dürfen nicht ohne die schriftliche Genehmigung vervielfältigt,
+      vorgeführt oder verarbeitet werden" (Impressum, Urheberrecht). Read with its legal meaning, this
+      covers only copyright acts. Facts such as dates and hours are not protected. There is no text-and-data-mining
+      reservation and no AI ban.'
+  keep_evidence:
+    answer: allow
+    because: 'Row 5: "dürfen nicht ohne die schriftliche Genehmigung vervielfältigt, vorgeführt oder verarbeitet
+      werden" (Impressum, Urheberrecht). One short factual sentence is usually not protected, and the
+      quotation exception would cover it anyway. The quote must stay one short factual sentence, never
+      descriptive or creative prose. No clause bans quoting.'
+  write_summary:
+    answer: allow
+    because: 'Row 6: "dürfen nicht ohne die schriftliche Genehmigung vervielfältigt, vorgeführt oder verarbeitet
+      werden" (Impressum, Urheberrecht). The word "verarbeitet" is read as the legal act of adaptation
+      (closest to row 6). A new text of at most five sentences, written only from collected facts and
+      passing the overlap check, is not an adaptation. No clause bans summaries.'
+  show_link:
+    answer: allow
+    because: 'Row 5: the only relevant clause is "dürfen nicht ohne die schriftliche Genehmigung vervielfältigt,
+      vorgeführt oder verarbeitet werden" (Impressum, Urheberrecht). It does not mention linking. The
+      section "Links zu externen Web Sites" only disclaims responsibility for third-party sites (row 13,
+      ignored).'
