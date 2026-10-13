@@ -129,3 +129,10 @@ def test_unreadable_start_page_stops(tmp_path):
 
     with pytest.raises(DraftStopped, match="the site answered 404"):
         run(tmp_path, site, PretendClaude())
+
+
+def test_the_review_notes_what_robots_txt_said(tmp_path):
+    site = PretendSite({"/": (200, "text/html", START_PAGE), "/agb": (200, "text/html", AGB_PAGE)})
+    path = run(tmp_path, site, PretendClaude(GOOD_FORM))
+
+    assert "#   no robots.txt, so no restrictions." in path.read_text(encoding="utf-8")

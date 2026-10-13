@@ -28,6 +28,21 @@ def site_of(url: str) -> str:
     return host.removeprefix("www.")
 
 
+def robots_note(page_url: str, robots_txt: str | None) -> str:
+    """One line for people: what the site's robots.txt says about a page. The engine never reads it."""
+    if robots_txt is None:
+        return "could not be fetched, so every page counts as blocked"
+    if robots_txt == "":
+        return "no robots.txt, so no restrictions"
+    rules = Protego.parse(robots_txt)
+    us = "may" if rules.can_fetch(page_url, BOT_NAME) else "may NOT"
+    blocked = [bot for bot in AI_BOT_NAMES if not rules.can_fetch(page_url, bot)]
+    ai = f"AI bots blocked: {', '.join(blocked)}" if blocked else "no AI bots blocked"
+    delay = rules.crawl_delay(BOT_NAME)
+    pace = f"crawl delay {delay:g} seconds" if delay else "no crawl delay"
+    return f"found; {BOT_NAME} {us} fetch the start page; {ai}; {pace}"
+
+
 def is_instagram(site: str) -> bool:
     """True for instagram.com and its subdomains, such as www.instagram.com."""
     return site == "instagram.com" or site.endswith(".instagram.com")

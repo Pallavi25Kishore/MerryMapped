@@ -7,7 +7,7 @@ from app.reading.clean import clean_html
 from app.reading.review_writer import write_draft
 from app.reading.terms_finder import find_terms_pages
 from app.reading.terms_reader import DraftFailed, TermsPage, draft_review
-from app.rules.engine import site_of
+from app.rules.engine import robots_note, site_of
 from app.rules.purposes import Purpose
 from app.rules.site_review import REVIEWS_DIR, review_path
 from app.settings import TERMS_READER_MODEL
@@ -44,7 +44,8 @@ def draft_site_review(start_url: str, fetcher: SafeFetcher | None = None, client
     print("Asking the AI to draft the review")
     draft = draft_review(pages, client=client)
     terms_urls = [page.url for page in pages] or [start.url]
-    return write_draft(site, draft, terms_urls, TERMS_READER_MODEL, reviews_dir, today)
+    robots = robots_note(start.url, fetcher.robots_for(start.url))
+    return write_draft(site, draft, terms_urls, TERMS_READER_MODEL, reviews_dir, today, robots)
 
 
 def why(result) -> str:

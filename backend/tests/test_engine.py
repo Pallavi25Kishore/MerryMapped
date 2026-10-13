@@ -1,5 +1,5 @@
 from app.rules.decision import Basis
-from app.rules.engine import can
+from app.rules.engine import can, robots_note
 from app.rules.purposes import Purpose
 from app.rules.site_review import SiteReview
 
@@ -190,3 +190,15 @@ def test_missing_line_gives_default_no():
 
     assert decision.allowed is False
     assert decision.basis == Basis.NOT_REVIEWED
+
+
+def test_robots_note_says_what_robots_txt_means_for_us():
+    page = "https://koeln-market.example/"
+    assert robots_note(page, "") == "no robots.txt, so no restrictions"
+    assert robots_note(page, None) == "could not be fetched, so every page counts as blocked"
+    assert robots_note(page, "User-agent: *\nDisallow: /*kat=*\n") == (
+        "found; MerryMappedBot may fetch the start page; no AI bots blocked; no crawl delay"
+    )
+    assert robots_note(page, "User-agent: GPTBot\nDisallow: /\n\nUser-agent: *\nCrawl-delay: 10\n") == (
+        "found; MerryMappedBot may fetch the start page; AI bots blocked: GPTBot; crawl delay 10 seconds"
+    )
