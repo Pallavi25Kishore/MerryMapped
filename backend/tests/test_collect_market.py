@@ -6,6 +6,7 @@ import app.collect_market as collect_market
 from dataclasses import replace
 
 from app.agent.onboarding import Collected
+from app.reading.fact_verifier import Verified
 from app.rules.decision import Basis, Decision
 from app.db.connection import make_engine
 from app.db.models import Fact, Market
@@ -43,6 +44,7 @@ def test_the_command_collects_and_saves(tmp_path, monkeypatch, capsys):
     database = f"sqlite:///{tmp_path / 'merry.db'}"
     monkeypatch.setenv("DATABASE_URL", database)
     monkeypatch.setattr(collect_market, "onboard", lambda website: FOUND)
+    monkeypatch.setattr(collect_market, "verify_facts", lambda facts: Verified(facts, [], [], []))
     collect_market.main(ARGS)
 
     assert "Saved 1 facts for Pretend Cathedral Market without a description." in capsys.readouterr().out
@@ -76,6 +78,7 @@ def run_command(tmp_path, monkeypatch, found, writer):
     monkeypatch.setenv("DATABASE_URL", database)
     monkeypatch.setattr(collect_market, "onboard", lambda website: found)
     monkeypatch.setattr(collect_market, "write_description", writer)
+    monkeypatch.setattr(collect_market, "verify_facts", lambda facts: Verified(facts, [], [], []))
     collect_market.main(ARGS)
     with Session(make_engine(database)) as session:
         return session.scalars(select(Market)).one().description
@@ -103,3 +106,18 @@ def test_a_missing_address_falls_back_to_the_city():
     found = Collected(facts=[], dropped=[], missing=["address"], steps=[], summary="x")
 
     assert collect_market.report(found).endswith("Missing: address (the city is used instead)")
+
+
+def test_verifier_drops_are_reported_and_not_saved(tmp_path, monkeypatch, capsys):
+    database = f"sqlite:///{tmp_path / 'merry.db'}"
+    monkeypatch.setenv("DATABASE_URL", database)
+    monkeypatch.setattr(collect_market, "onboard", lambda website: FOUND)
+    monkeypatch.setattr(collect_market, "verify_facts",
+                        lambda facts: Verified([], [("a", "b")], [(facts[0], "the quote names no year")], []))
+    collect_market.main(ARGS)
+
+    out = capsys.readouterr().out
+    assert "dropped: verifier: the quote names no year" in out
+    assert 'Verification: 1 trimmed, 1 dropped, 0 not verified\n  trimmed: "a" -> "b"' in out
+    with Session(make_engine(database)) as session:
+        assert session.scalars(select(Fact)).all() == []

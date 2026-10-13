@@ -1,5 +1,6 @@
 import argparse
 import json
+from dataclasses import replace
 from datetime import date
 
 from sqlalchemy.orm import Session
@@ -9,6 +10,7 @@ from app.db.connection import make_engine
 from app.db.models import create_tables
 from app.db.save import MarketDetails, save_market
 from app.reading.description_writer import DescriptionFailed, write_description
+from app.reading.fact_verifier import Verified, verify_facts
 
 
 def report(collected: Collected) -> str:
@@ -47,7 +49,11 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
 
     collected = onboard(args.website)
+    verified = verify_facts(collected.facts)
+    collected = replace(collected, facts=verified.facts, dropped=collected.dropped + [
+        (fact["source_url"], fact, f"verifier: {reason}") for fact, reason in verified.dropped])
     print(report(collected))
+    print(verification_report(verified))
 
     details = MarketDetails(args.name, args.city, args.country, args.website)
     description = describe(details, collected)
@@ -58,6 +64,16 @@ def main(argv: list[str] | None = None) -> None:
         save_market(session, details, collected, date.today(), description)
     print(f"\nSaved {len(collected.facts)} facts for {args.name}"
           + (" with a description." if description else " without a description."))
+
+
+def verification_report(verified: Verified) -> str:
+    """What the second AI check changed: trimmed details, and facts kept without a verdict."""
+    lines = ["", f"Verification: {len(verified.trimmed)} trimmed, {len(verified.dropped)} dropped, "
+                 f"{len(verified.unverified)} not verified"]
+    lines += [f'  trimmed: "{was}" -> "{now}"' for was, now in verified.trimmed]
+    lines += [f"  not verified: {fact['kind']} {json.dumps(fact['value'], ensure_ascii=False)}"
+              for fact in verified.unverified]
+    return "\n".join(lines)
 
 
 def describe(details: MarketDetails, collected: Collected) -> str | None:
