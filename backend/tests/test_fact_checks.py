@@ -144,3 +144,29 @@ def test_different_days_with_different_hours_are_kept():
     kept, _ = drop_contradictions([weekdays, weekend])
 
     assert kept == [weekdays, weekend]
+
+
+def test_a_closed_day_inside_the_season_is_not_a_contradiction():
+    facts = [opening("2026-12-15"), closing("2026-12-25"), fact("closed_on", {"date": "2026-12-24"})]
+    kept, dropped = drop_contradictions(facts)
+
+    assert kept == facts
+    assert dropped == []
+
+
+def test_closed_and_special_hours_on_the_same_date_are_dropped():
+    closed = fact("closed_on", {"date": "2026-12-24"})
+    short_day = fact("special_hours", {"date": "2026-12-24", "opens": "11:00", "closes": "14:00"})
+    christmas = fact("closed_on", {"date": "2026-12-25"})
+    kept, dropped = drop_contradictions([closed, short_day, christmas])
+
+    assert kept == [christmas]
+    assert [reason for _, reason in dropped] == ["different hours were given for 2026-12-24"] * 2
+
+
+def test_the_same_closed_day_stated_twice_is_kept():
+    closed = fact("closed_on", {"date": "2026-12-24"})
+    kept, dropped = drop_contradictions([closed, closed])
+
+    assert len(kept) == 2
+    assert dropped == []

@@ -1,3 +1,4 @@
+import json
 import re
 from datetime import date
 
@@ -81,7 +82,7 @@ def check_facts(facts: list[dict], page_text: str) -> tuple[list[dict], list[tup
 
 
 def drop_contradictions(facts: list[dict]) -> tuple[list[dict], list[tuple[dict, str]]]:
-    """Checks 7 to 9 on facts that each passed checks 1 to 6, from one page or from several."""
+    """Checks 7 to 10 on facts that each passed checks 1 to 6, from one page or from several."""
     kept, dropped = list(facts), []
 
     # 8: two different opening dates (or closing dates): drop them all.
@@ -109,6 +110,15 @@ def drop_contradictions(facts: list[dict]) -> tuple[list[dict], list[tuple[dict,
     for fact in clashing:
         kept.remove(fact)
         dropped.append((fact, "different hours were given for the same days"))
+
+    # 10: a date that is both closed and given special hours, or given two different special hours.
+    for day in {fact["value"]["date"] for fact in kept if fact["kind"] in ("closed_on", "special_hours")}:
+        on_day = [fact for fact in kept
+                  if fact["kind"] in ("closed_on", "special_hours") and fact["value"]["date"] == day]
+        if len({json.dumps(fact["value"], sort_keys=True) for fact in on_day}) > 1:
+            for fact in on_day:
+                kept.remove(fact)
+                dropped.append((fact, f"different hours were given for {day}"))
 
     return kept, dropped
 
