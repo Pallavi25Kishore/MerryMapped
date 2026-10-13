@@ -1,0 +1,41 @@
+# Site review for noel.strasbourg.eu
+# Drafted by AI (claude-sonnet-5-5) on 2026-10-13, using backend/prompts/clause_guide.md,
+# from the terms pages listed below. Read every answer against those pages.
+# robots.txt on 2026-10-13 (for information; the engine checks the current one on every visit):
+#   found; MerryMappedBot may fetch the start page; no AI bots blocked; no crawl delay.
+# Approve by committing this file; reject by deleting it.
+reviewed_on: 2026-10-13
+terms_urls:
+- https://noel.strasbourg.eu/mentions-legales
+automated_access:
+  answer: allow
+  because: 'Row 11: "Pour toute autre utilisation, il est nécessaire d''avoir au préalable obtenu l''accord
+    écrit du responsable de la publication" [English: for any other use, prior written agreement of the
+    publication manager is required] (Mentions légales, Contenu et propriété intellectuelle). The clause
+    does not forbid bots or automated visits, so access is allowed under row 11. The reproduction clause
+    is row 5 and does not change this.'
+purposes:
+  collect_facts:
+    answer: deny
+    because: 'Row 11: "Pour toute autre utilisation, il est nécessaire d''avoir au préalable obtenu l''accord
+      écrit du responsable de la publication" [English: for any other use, prior written agreement of
+      the publication manager is required] (Mentions légales, Contenu et propriété intellectuelle). Only
+      displaying and printing for personal use is permitted, so an AI reading pages is another use. The
+      clause does not refer to copyright limits, and it is too broad to read narrowly. It does not fit
+      row 9b cleanly, so the stricter row 11 applies. The reproduction ban "Aucune reproduction de ce
+      site ... ne peut être faite sans autorisation expresse" [English: no reproduction of this site may
+      be made without express authorization] is row 5 and adds nothing.'
+  keep_evidence:
+    answer: deny
+    because: 'Follows from row 11: collecting facts is denied because any use other than personal display
+      and printing needs written permission.'
+  write_summary:
+    answer: deny
+    because: 'Follows from row 11: collecting facts is denied because any use other than personal display
+      and printing needs written permission.'
+  show_link:
+    answer: allow
+    because: 'Row 11: linking is not restricted. The site says "Ils peuvent également librement encourager
+      d''autres personnes à accéder elles-mêmes aux informations disponibles sur ce site et leur indiquer
+      comment les trouver" [English: they may also freely encourage others to access the information on
+      this site themselves and tell them how to find it] (Mentions légales, Contenu et propriété intellectuelle).'
