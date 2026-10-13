@@ -3,6 +3,7 @@ import re
 from datetime import date
 
 from app.reading.draft_checks import tidy
+from app.reading.terms_finder import simplify
 
 MAX_QUOTE = 300
 MAX_SHORT_QUOTE = 100  # details and tags quote only the words that state them
@@ -23,6 +24,23 @@ NEEDS = {
     "tag": {"tag"},
 }
 MAY_ALSO = {"hours": {"from", "until"}}
+
+# Month names that may stand for a month number, without accents (simplify removes them).
+MONTHS = {
+    1: ["januar", "janner", "janvier", "january", "jan"],
+    2: ["februar", "fevrier", "february", "feb"],
+    3: ["marz", "maerz", "mars", "march"],
+    4: ["april", "avril", "apr"],
+    5: ["mai", "may"],
+    6: ["juni", "juin", "june", "jun"],
+    7: ["juli", "juillet", "july", "jul"],
+    8: ["august", "aout", "aug"],
+    9: ["september", "septembre", "sept", "sep"],
+    10: ["oktober", "octobre", "october", "okt", "oct"],
+    11: ["november", "novembre", "nov"],
+    12: ["dezember", "decembre", "december", "dez", "dec"],
+}
+MIDNIGHT = ["mitternacht", "minuit", "midnight"]
 
 
 def fact_problem(fact: dict, page_text: str) -> str | None:
@@ -64,6 +82,13 @@ def fact_problem(fact: dict, page_text: str) -> str | None:
     if "from" in dates and "until" in dates and dates["from"] > dates["until"]:
         return "from is after until"
 
+    # 4b: the quote states the date and the times given (lenient: any common way of writing them).
+    if "date" in value and not quote_states_date(quote, dates["date"]):
+        return f"the quote does not state {value['date']}"
+    if "opens" in value and not (quote_states_time(quote, value["opens"])
+                                 and quote_states_time(quote, value["closes"])):
+        return f"the quote does not state {value['opens']}–{value['closes']}"
+
     # 5 and 6: the year is stated on the page, and the dates are in the 2026 season.
     if dates:
         year_quote = fact["year_quote"] or ""
@@ -76,6 +101,22 @@ def fact_problem(fact: dict, page_text: str) -> str | None:
             if not any(year in year_quote for year in years):
                 return f"year quote does not state {day.year}"
     return None
+
+
+def quote_states_date(quote: str, day: date) -> bool:
+    """The quote contains the day number and the month, as a number or a name, anywhere in it."""
+    text, numbers = simplify(quote), {int(n) for n in re.findall(r"\d+", quote)}
+    month_named = any(f" {name} " in text for name in MONTHS[day.month])
+    return day.day in numbers and (day.month in numbers or month_named)
+
+
+def quote_states_time(quote: str, hhmm: str) -> bool:
+    """The quote contains the hour (9 also counts for 21, for "9 pm"), and the minutes if not :00."""
+    hour, minute = (int(part) for part in hhmm.split(":"))
+    numbers, text = {int(n) for n in re.findall(r"\d+", quote)}, simplify(quote)
+    hour_found = (hour in numbers or (hour > 12 and hour - 12 in numbers)
+                  or (hour == 24 and (0 in numbers or any(f" {w} " in text for w in MIDNIGHT))))
+    return hour_found and (minute == 0 or minute in numbers)
 
 
 def check_facts(facts: list[dict], page_text: str) -> tuple[list[dict], list[tuple[dict, str]]]:

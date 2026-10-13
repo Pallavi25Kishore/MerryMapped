@@ -1,6 +1,14 @@
+from datetime import date
+
 import pytest
 
-from app.reading.fact_checks import check_facts, drop_contradictions, fact_problem
+from app.reading.fact_checks import (
+    check_facts,
+    drop_contradictions,
+    fact_problem,
+    quote_states_date,
+    quote_states_time,
+)
 
 PAGE = """Weihnachtsmarkt 2026
 Auf dem Roncalliplatz
@@ -33,7 +41,9 @@ def hours(**value):
 def test_good_facts_pass():
     assert fact_problem(fact(), PAGE) is None
     assert fact_problem(hours(), PAGE) is None
-    assert fact_problem(hours(closes="24:00"), PAGE) is None
+    midnight = "Freitags 11 Uhr bis Mitternacht."
+    late = fact("hours", {"days": ["fri"], "opens": "11:00", "closes": "24:00"}, quote=midnight, year_quote=None)
+    assert fact_problem(late, PAGE + "\n" + midnight) is None
 
 
 def test_january_date_may_take_the_season_year():
@@ -56,7 +66,8 @@ def test_january_date_may_take_the_season_year():
         (hours(**{"from": "2026-12-26", "until": "2026-12-01"}), "from is after until"),
         (fact(year_quote=None), "year is not stated on the page"),
         (fact(year_quote="Weihnachtsmarkt 2027"), "year is not stated on the page"),
-        (fact(value={"date": "2025-11-17"}, year_quote="Weihnachtsmarkt 2025"),
+        (fact(value={"date": "2025-11-17"}, quote="Weihnachtsmarkt 2025: 17.11. bis 23.12.",
+              year_quote="Weihnachtsmarkt 2025"),
          "date 2025-11-17 is outside the 2026 season"),
         (fact(value={"date": "2026-11-16"}, year_quote="Weihnachtsmarkt 2025"),
          "year quote does not state 2026"),
@@ -73,45 +84,59 @@ def test_long_quote_is_caught():
     )
 
 
+def stated(day):
+    """A quote that states the day, e.g. 'Termin: 16.11.2026' for 2026-11-16."""
+    year, month, dom = day.split("-")
+    return f"Termin: {int(dom)}.{int(month)}.{year}"
+
+
 def opening(day):
-    return fact("opening_date", {"date": day})
+    return fact("opening_date", {"date": day}, quote=stated(day), year_quote=stated(day))
 
 
 def closing(day):
-    return fact("closing_date", {"date": day})
+    return fact("closing_date", {"date": day}, quote=stated(day), year_quote=stated(day))
+
+
+def page_with(*facts):
+    return PAGE + "\n" + "\n".join(f["evidence_quote"] for f in facts)
 
 
 def test_good_facts_are_kept_and_bad_ones_dropped_with_the_reason():
     invented = fact(quote="Der Markt öffnet am 16.11.")
-    kept, dropped = check_facts([opening("2026-11-16"), closing("2027-01-06"), hours(), invented], PAGE)
+    facts = [opening("2026-11-16"), closing("2027-01-06"), hours(), invented]
+    kept, dropped = check_facts(facts, page_with(*facts[:2]))
 
     assert kept == [opening("2026-11-16"), closing("2027-01-06"), hours()]
     assert dropped == [(invented, "evidence quote not found on the page")]
 
 
 def test_different_opening_dates_are_all_dropped():
-    kept, dropped = check_facts([opening("2026-11-16"), opening("2026-11-17"), hours()], PAGE)
+    facts = [opening("2026-11-16"), opening("2026-11-17"), hours()]
+    kept, dropped = check_facts(facts, page_with(*facts[:2]))
 
     assert kept == [hours()]
     assert [reason for _, reason in dropped] == ["different opening_dates were given"] * 2
 
 
 def test_the_same_date_stated_twice_is_kept():
-    kept, dropped = check_facts([opening("2026-11-16"), opening("2026-11-16")], PAGE)
+    kept, dropped = check_facts([opening("2026-11-16"), opening("2026-11-16")], page_with(opening("2026-11-16")))
 
     assert len(kept) == 2
     assert dropped == []
 
 
 def test_opening_after_closing_drops_both():
-    kept, dropped = check_facts([opening("2026-12-20"), closing("2026-11-20")], PAGE)
+    facts = [opening("2026-12-20"), closing("2026-11-20")]
+    kept, dropped = check_facts(facts, page_with(*facts))
 
     assert kept == []
     assert [reason for _, reason in dropped] == ["opening date is after closing date"] * 2
 
 
 def test_a_one_day_market_is_kept():
-    kept, _ = check_facts([opening("2026-12-05"), closing("2026-12-05")], PAGE)
+    facts = [opening("2026-12-05"), closing("2026-12-05")]
+    kept, _ = check_facts(facts, page_with(*facts))
 
     assert len(kept) == 2
 
@@ -218,3 +243,34 @@ def test_a_tag_needs_the_tag_field():
     assert fact_problem(fact("tag", {"text": "artisan"}, quote="Kunsthandwerk", year_quote=None), PAGE) == (
         "tag needs ['tag'], got ['text']"
     )
+
+
+@pytest.mark.parametrize(
+    ("quote", "day"),
+    [("Mo 16.11.2026", "2026-11-16"), ("vom 16. bis 23. Dezember 2026", "2026-12-16"),
+     ("27. November bis 24. Dezember 2026", "2026-12-24"), ("le 5 décembre 2026", "2026-12-05")],
+)
+def test_common_ways_of_writing_a_date_pass(quote, day):
+    assert quote_states_date(quote, date.fromisoformat(day))
+
+
+@pytest.mark.parametrize(
+    ("quote", "hhmm"),
+    [("So-Mi 11-21 Uhr", "21:00"), ("11h00–21h00", "21:00"), ("11 a.m. to 9 p.m.", "21:00"),
+     ("bis Mitternacht", "24:00"), ("10.30 bis 20 Uhr", "10:30")],
+)
+def test_common_ways_of_writing_a_time_pass(quote, hhmm):
+    assert quote_states_time(quote, hhmm)
+
+
+def test_a_date_the_quote_does_not_state_is_caught():
+    page = PAGE + "\nMo 16.11.2026\nAm Totensonntag geschlossen."
+    wrong_day = fact(value={"date": "2026-11-17"}, quote="Mo 16.11.2026", year_quote="Mo 16.11.2026")
+    worked_out = fact("closed_on", {"date": "2026-11-22"}, quote="Am Totensonntag geschlossen.")
+
+    assert fact_problem(wrong_day, page) == "the quote does not state 2026-11-17"
+    assert fact_problem(worked_out, page) == "the quote does not state 2026-11-22"
+
+
+def test_hours_the_quote_does_not_state_are_caught():
+    assert fact_problem(hours(closes="21:00"), PAGE) == "the quote does not state 11:00–21:00"
