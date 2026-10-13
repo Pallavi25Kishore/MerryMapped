@@ -170,3 +170,10 @@ def test_an_unreachable_robots_txt_stops_without_a_review(tmp_path):
     with pytest.raises(DraftStopped, match="robots.txt could not be checked"):
         run(tmp_path, site, PretendClaude(GOOD_FORM))
     assert not (tmp_path / "site_reviews" / f"{SITE}.yaml").exists()
+
+
+def test_the_link_only_review_spells_out_every_answer(tmp_path):
+    site = PretendSite({"/": (200, "text/html", START_PAGE)}, robots_text="User-agent: GPTBot\nDisallow: /\n")
+    text = run(tmp_path, site, PretendClaude(GOOD_FORM)).read_text(encoding="utf-8")
+
+    assert "&id" not in text and "*id" not in text

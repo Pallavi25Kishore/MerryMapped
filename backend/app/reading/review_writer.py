@@ -52,15 +52,16 @@ def write_blocked(site: str, robots_address: str, reason: str, robots: str,
                   reviews_dir: Path = REVIEWS_DIR, today: date | None = None) -> Path:
     """A review for a site whose robots.txt blocks us: every reading purpose denied, linking allowed."""
     today = today or date.today()
-    follows = {"answer": "deny", "because": f"Follows from robots.txt: {reason}"}
+    def follows():  # a fresh answer each time, so the YAML spells each one out
+        return {"answer": "deny", "because": f"Follows from robots.txt: {reason}"}
     data = {
         "reviewed_on": today,
         "terms_urls": [robots_address],
-        "automated_access": {"answer": "deny", "because": f"robots.txt: {reason}; the terms could not be read"},
+        "automated_access": {"answer": "deny", "because": f"{reason}; the terms could not be read"},
         "purposes": {
-            "collect_facts": follows,
-            "keep_evidence": follows,
-            "write_summary": follows,
+            "collect_facts": follows(),
+            "keep_evidence": follows(),
+            "write_summary": follows(),
             "show_link": {"answer": "allow", "because": "Linking needs no download, and nothing forbids it"},
         },
     }
