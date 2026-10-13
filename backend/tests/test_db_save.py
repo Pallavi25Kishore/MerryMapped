@@ -74,3 +74,13 @@ def test_another_markets_facts_are_untouched(engine):
 
     assert [f.kind for f in facts_of(engine, AACHEN)[1]] == ["hours"]
     assert facts_of(engine, COLOGNE)[1] == []
+
+
+def test_a_fact_without_its_quote_is_saved(engine):
+    no_quote = fact("opening_date", {"date": "2026-11-16"}) | {
+        "evidence_quote": None, "evidence_translation": None, "quote_not_kept": "The site's terms deny this"}
+    save(engine, COLOGNE, collected(no_quote))
+
+    saved = facts_of(engine, COLOGNE)[1][0]
+    assert (saved.evidence_quote, saved.evidence_translation) == (None, None)
+    assert saved.source_url == "https://koeln-market.example/de/"

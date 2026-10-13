@@ -16,7 +16,10 @@ def report(collected: Collected) -> str:
              f"Agent's summary: {collected.summary}", "", f"Facts found ({len(collected.facts)}):"]
     for fact in collected.facts:
         lines.append(f"  {fact['kind']}: {json.dumps(fact['value'], ensure_ascii=False)}")
-        lines.append(f'    quote: "{fact["evidence_quote"]}"')
+        if fact["evidence_quote"] is None:
+            lines.append(f"    quote not kept: {fact['quote_not_kept']}")
+        else:
+            lines.append(f'    quote: "{fact["evidence_quote"]}"')
         if fact["evidence_translation"]:
             lines.append(f'    English: "{fact["evidence_translation"]}"')
         lines.append(f"    page: {fact['source_url']}")

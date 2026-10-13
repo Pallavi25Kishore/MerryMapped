@@ -25,7 +25,7 @@ class Fact(Base):
     market_id: Mapped[int] = mapped_column(ForeignKey("markets.id"))
     kind: Mapped[str]  # opening_date, closing_date, hours, closed_on, special_hours or address
     value: Mapped[dict] = mapped_column(JSON)
-    evidence_quote: Mapped[str]
+    evidence_quote: Mapped[str | None]  # None when the site's review doesn't allow keeping quotes
     evidence_translation: Mapped[str | None]
     source_url: Mapped[str]
     page_fingerprint: Mapped[str]

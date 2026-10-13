@@ -75,8 +75,12 @@ class AgentTools:
 
         page = clean_html(result.content, result.url)
         kept, dropped = check_facts(read_page(result.url, page.text, client=self.client), page.text)
-        self.facts += [{**fact, "source_url": result.url, "page_fingerprint": result.fingerprint}
-                       for fact in kept]
+        stamp = {"source_url": result.url, "page_fingerprint": result.fingerprint}
+        quotes = self.fetcher.ask(result.url, Purpose.KEEP_EVIDENCE)
+        if not quotes.allowed:  # the facts may be kept, the site's sentences may not
+            stamp |= {"evidence_quote": None, "evidence_translation": None,
+                      "quote_not_kept": quotes.reason}
+        self.facts += [{**fact, **stamp} for fact in kept]
         self.dropped += [(result.url, fact, problem) for fact, problem in dropped]
         return self.report(url, reason, {
             "status": "read",

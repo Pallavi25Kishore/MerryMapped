@@ -26,14 +26,23 @@ purposes:
   collect_facts:
     answer: allow
     because: 'Row 1: terms reviewed, no clause restricts collecting facts'
+  keep_evidence:
+    answer: allow
+    because: 'Row 1: terms reviewed, no clause restricts quoting'
 """
 
+REVIEW_WITHOUT_QUOTES = REVIEW.replace("""  keep_evidence:
+    answer: allow
+    because: 'Row 1: terms reviewed, no clause restricts quoting'""", """  keep_evidence:
+    answer: deny
+    because: 'Row 7: "Auszüge dürfen nicht übernommen werden"'""")
 
-def tools(tmp_path, site, reviewed=True, max_pages=10):
+
+def tools(tmp_path, site, reviewed=True, max_pages=10, review=REVIEW):
     reviews = tmp_path / "site_reviews"
     reviews.mkdir()
     if reviewed:
-        (reviews / "koeln-market.example.yaml").write_text(REVIEW, encoding="utf-8")
+        (reviews / "koeln-market.example.yaml").write_text(review, encoding="utf-8")
     fetcher = SafeFetcher(
         client=make_client(transport=httpx.MockTransport(site.answer)),
         reviews_dir=reviews,
@@ -89,3 +98,21 @@ def test_a_page_the_engine_refuses_could_not_be_opened(tmp_path):
 
     assert outcome["status"] == "could not open"
     assert "review" in outcome["why"].lower()
+
+
+def test_quotes_are_kept_when_the_review_allows_it(tmp_path):
+    agent = tools(tmp_path, home_site())
+    agent.open_page(START, "home page")
+
+    assert agent.facts[0]["evidence_quote"] == OPENING["evidence_quote"]
+
+
+def test_quotes_are_removed_when_the_review_denies_it(tmp_path):
+    agent = tools(tmp_path, home_site(), review=REVIEW_WITHOUT_QUOTES)
+    outcome = agent.open_page(START, "home page")
+
+    assert outcome["facts_found"] == [{"kind": "opening_date", "value": {"date": "2026-11-16"}}]
+    fact = agent.facts[0]
+    assert (fact["evidence_quote"], fact["evidence_translation"]) == (None, None)
+    assert fact["quote_not_kept"] == "Admin-approved review (2026-10-20) denies this"
+    assert fact["source_url"] == START

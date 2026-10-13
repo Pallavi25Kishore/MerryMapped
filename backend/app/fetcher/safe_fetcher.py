@@ -10,6 +10,7 @@ from app.fetcher.result import FetchResult
 from app.fetcher.robots import get_robots_txt, make_client, robots_url
 from app.fetcher.visit_log import VisitLog, fingerprint
 from app.rules.engine import BOT_NAME, FETCHES_PAGES, can, site_of
+from app.rules.decision import Decision
 from app.rules.purposes import Purpose
 from app.rules.site_review import REVIEWS_DIR, load_review
 
@@ -50,9 +51,7 @@ class SafeFetcher:
 
     def fetch_once(self, url: str, purpose: Purpose) -> tuple[FetchResult, str | None]:
         """One request: ask the engine, then download. Also returns the redirect address, if any."""
-        robots_txt = self.robots_for(url)
-        review = load_review(site_of(url), self.reviews_dir)
-        decision = can(url, purpose, review, robots_txt)
+        decision = self.ask(url, purpose)
         if not decision.allowed:
             return FetchResult(decision, url, purpose), None
 
@@ -72,6 +71,12 @@ class SafeFetcher:
 
         page_hash = fingerprint(content) if content is not None else None
         return FetchResult(decision, url, purpose, status, content, problem, page_hash), None
+
+    def ask(self, url: str, purpose: Purpose) -> Decision:
+        """The engine's decision for a page and purpose, with the site's robots.txt and review. Downloads no page."""
+        robots_txt = self.robots_for(url)
+        review = load_review(site_of(url), self.reviews_dir)
+        return can(url, purpose, review, robots_txt)
 
     def robots_for(self, url: str) -> str | None:
         """The robots.txt for a page's site: downloaded on first use, then remembered."""

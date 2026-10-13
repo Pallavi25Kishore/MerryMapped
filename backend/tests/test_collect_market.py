@@ -53,3 +53,12 @@ def test_a_wrong_country_is_refused(monkeypatch):
     monkeypatch.setattr(collect_market, "onboard", lambda website: pytest.fail("must not run"))
     with pytest.raises(SystemExit):
         collect_market.main([WEBSITE, "--name", "X", "--city", "Köln", "--country", "GE"])
+
+
+def test_report_says_when_a_quote_was_not_kept():
+    no_quote = fact("opening_date", {"date": "2026-11-16"}) | {
+        "evidence_quote": None, "evidence_translation": None, "quote_not_kept": "The site's terms deny this"}
+    text = collect_market.report(Collected(facts=[no_quote], dropped=[], missing=[], steps=[], summary="x"))
+
+    assert "quote not kept: The site's terms deny this" in text
+    assert "quote:" not in text

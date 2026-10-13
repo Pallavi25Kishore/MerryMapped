@@ -326,3 +326,12 @@ def test_log_never_contains_the_page(tmp_path):
 
     log_text = (tmp_path / "visits.jsonl").read_text(encoding="utf-8")
     assert "Opening: 20 Nov to 23 Dec" not in log_text
+
+
+def test_ask_gives_the_engines_answer_without_downloading_the_page(tmp_path):
+    site = PretendSite()
+    fetcher = make_fetcher(site, tmp_path, REVIEW_ALLOWING_FACTS)
+
+    assert fetcher.ask(PAGE, Purpose.COLLECT_FACTS).allowed
+    assert not fetcher.ask(PAGE, Purpose.KEEP_EVIDENCE).allowed  # the review doesn't allow it
+    assert site.requested == ["/robots.txt"]
