@@ -1,0 +1,42 @@
+# Site review for visitbruges.be
+# Drafted by AI (claude-sonnet-5-5) on 2026-10-13, using backend/prompts/clause_guide.md,
+# from the terms pages listed below. Read every answer against those pages.
+# robots.txt on 2026-10-13 (for information; the engine checks the current one on every visit):
+#   found; MerryMappedBot may fetch the start page; no AI bots blocked; no crawl delay.
+# Approve by committing this file; reject by deleting it.
+reviewed_on: 2026-10-13
+terms_urls:
+- https://www.visitbruges.be/en/disclaimer
+- https://www.visitbruges.be/en/privacy-policy-visit-bruges
+automated_access:
+  answer: allow
+  because: 'Row 5: "Reproduce, modify, disclose, distribute or transmit the content of the website in
+    whole or in part." (Disclaimer, Intellectual property rights) names only legal acts of reproduction
+    and adaptation, not bots or automated access. No clause bans bots or scraping.'
+purposes:
+  collect_facts:
+    answer: allow
+    because: 'Row 5: "Store information on this website (except for strictly personal use, as necessary
+      in order to access the website)." (Disclaimer, Intellectual property rights) is read as the legal
+      act of reproduction, which covers only protected content, not facts. Row 6: "modify" in the same
+      list is a derivative-works clause and also does not restrict collecting facts. It is not a ban on
+      bots, text-and-data-mining or AI. This is the closest row, applied because the wording is not exact. Storing
+      information is prohibited except for personal use so we fall under the exception'
+  keep_evidence:
+    answer: allow
+    because: 'Row 5: "Reproduce, modify, disclose, distribute or transmit the content of the website in
+      whole or in part." (Disclaimer, Intellectual property rights) is a reproduction clause. One short
+      factual sentence is usually not protected, and the quotation exception would cover it anyway. The
+      quote must be one short factual sentence, never descriptive or creative prose. There is no clause
+      against quoting.'
+  write_summary:
+    answer: allow
+    because: 'Row 6: "Reproduce, modify, disclose, distribute or transmit the content of the website in
+      whole or in part." (Disclaimer, Intellectual property rights) is an adaptation clause. A short paragraph
+      of at most 5 sentences, written only from collected facts and passing the overlap check, is not
+      an adaptation. There is no clause against summaries.'
+  show_link:
+    answer: allow
+    because: 'Row 1: the terms contain no clause restricting links to this site. The Links to other websites
+      section only disclaims responsibility for third-party sites and sets no permission requirement for
+      linking to this one.'
