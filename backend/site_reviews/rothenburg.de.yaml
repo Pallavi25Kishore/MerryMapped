@@ -1,0 +1,34 @@
+# Site review for rothenburg.de
+# Drafted by AI (claude-sonnet-5-5) on 2026-10-13, using backend/prompts/clause_guide.md,
+# from the terms pages listed below. Read every answer against those pages.
+# robots.txt on 2026-10-13 (for information; the engine checks the current one on every visit):
+#   found; MerryMappedBot may fetch the start page; no AI bots blocked; no crawl delay.
+# Approve by committing this file; reject by deleting it.
+reviewed_on: 2026-10-13
+terms_urls:
+- https://www.rothenburg.de/en/impressum
+- https://www.rothenburg.de/en/datenschutz
+automated_access:
+  answer: allow
+  because: 'Row 1: No terms of use found. The imprint and privacy policy contain no clause restricting
+    bots or automated access. The Friendly Captcha passage ("Friendly Captcha is a data protection-friendly
+    solution to make it more difficult for automated programs and scripts (so-called “bots”) to use our
+    website.") only describes spam protection for contact forms in the privacy policy (row 13).'
+purposes:
+  collect_facts:
+    answer: allow
+    because: 'Row 1: No terms of use found. The imprint and privacy policy contain no text-and-data-mining
+      reservation, AI ban or permission requirement that restricts collecting facts.'
+  keep_evidence:
+    answer: allow
+    because: 'Row 1: No terms of use found. No clause on quoting or excerpts appears in the imprint or
+      privacy policy.'
+  write_summary:
+    answer: allow
+    because: 'Row 1: No terms of use found. No clause on summaries, rewording or derivative works appears
+      in the imprint or privacy policy.'
+  show_link:
+    answer: allow
+    because: 'Row 1: No terms of use found. No clause requires permission for linking. The only linking
+      text, "we assume no liability for external links to third-party content", is a liability disclaimer
+      (row 13).'
