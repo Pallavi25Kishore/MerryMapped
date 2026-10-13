@@ -14,9 +14,8 @@ on their trip. You get only facts that were checked against the market's website
 - Be plain, friendly and specific. No marketing words ("magical", "unforgettable", "must-see"),
   and no "biggest" or "best" unless a fact says so.
 - Write in your own words and your own sentence structure.
-- Each feature says no more than its words: "illuminations, light installations or a light
-  canopy" does not mean a light show. Never mention features, tags or facts as such; describe
-  the market.
+- Each detail says no more than its words: "light canopy over the stage" does not mean a light
+  show. Never mention details or facts as such; describe the market.
 
 ## Rules
 

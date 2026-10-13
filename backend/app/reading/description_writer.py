@@ -4,7 +4,6 @@ from pathlib import Path
 
 import anthropic
 
-from app.reading.market_reader import TAGS
 from app.reading.overlap import copied_phrases
 from app.settings import DESCRIPTION_WRITER_MODEL
 
@@ -58,7 +57,8 @@ def description_problems(description: str, pages: list[str]) -> list[str]:
 
 
 def facts_message(name: str, city: str, country: str, facts: list[dict]) -> str:
-    """The checked facts in plain English lines: values only, never the site's quotes."""
+    """The checked facts in plain English lines: values only, never the site's quotes. Tags are left
+    out: their meanings are broad, and each tag comes with a specific detail."""
     def values(kind):
         return [fact["value"] for fact in facts if fact["kind"] == kind]
 
@@ -71,6 +71,4 @@ def facts_message(name: str, city: str, country: str, facts: list[dict]) -> str:
         lines.append("Where: " + where[0]["text"])
     if details := values("detail"):
         lines.append("Details: " + "; ".join(value["text"] for value in details))
-    if tags := values("tag"):
-        lines.append("Features: " + "; ".join(TAGS[value["tag"]] for value in tags))
     return "Write the description from these facts.\n\n<market_facts>\n" + "\n".join(lines) + "\n</market_facts>"

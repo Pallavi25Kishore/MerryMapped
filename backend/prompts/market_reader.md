@@ -21,6 +21,7 @@ fact is fine and a wrong fact is not.
 - Dates are written year-month-day. Times are 24-hour, "HH:MM". Weekdays are
   mon, tue, wed, thu, fri, sat, sun. "Daily" means all seven.
 - Write one `hours` fact for each group of weekdays with the same hours.
+- Write the `address` exactly as on the page, in the page's language: never translate it or add to it.
 - Facts are about this market only: ignore other markets.
 
 ## Details and tags
@@ -30,7 +31,9 @@ fact is fine and a wrong fact is not.
 - Details describe the market as a whole: turn what single stalls or events offer into what the
   market offers ("Stand 42: Glühwein" becomes "mulled wine"), claim no more than the page shows,
   and never name a single stall, shop or performance time.
-- A `tag` is one of the tags below, only if the page clearly supports it:
+- A `tag` is one of the tags below, only if the page clearly supports it. Whenever you give a tag,
+  also give a `detail` saying specifically what the page shows ("light-show" with "sparkling light
+  canopy over the stage").
 
 | tag               | the page shows                                                     |
 |-------------------|--------------------------------------------------------------------|

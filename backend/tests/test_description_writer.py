@@ -74,7 +74,7 @@ def test_the_sites_quotes_are_never_sent():
         assert f["evidence_quote"] not in sent
 
 
-def test_the_facts_are_sent_without_the_hours():
+def test_the_facts_are_sent_without_the_hours_or_tags():
     claude = PretendClaude(GOOD)
     write(claude)
     sent = claude.requests[0]["messages"][0]["content"]
@@ -84,6 +84,5 @@ def test_the_facts_are_sent_without_the_hours():
     assert "Closed: 2026-11-22" in sent
     assert "Where: Roncalliplatz" in sent
     assert "Details: over 140 stalls" in sent
-    assert "Features: handcrafts and makers" in sent
-    assert "artisan" not in sent
+    assert "artisan" not in sent and "handcrafts" not in sent  # tags are left out
     assert "10:00" not in sent
