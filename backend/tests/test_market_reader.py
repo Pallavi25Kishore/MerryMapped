@@ -54,6 +54,8 @@ def test_the_form_offers_details_and_only_the_fixed_tags():
     fact = FACTS_SCHEMA["properties"]["facts"]["items"]["properties"]
 
     assert {"detail", "tag"} <= set(fact["kind"]["enum"])
-    tags = fact["value"]["properties"]["tag"]["enum"]
-    assert "artisan" in tags and None in tags
+    text_or_null = fact["value"]["properties"]["tag"]["anyOf"]
+    assert {"type": "null"} in text_or_null
+    tags = text_or_null[0]["enum"]
+    assert "artisan" in tags
     assert "romantic" not in tags

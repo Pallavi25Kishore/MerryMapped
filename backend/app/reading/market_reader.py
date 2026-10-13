@@ -29,7 +29,7 @@ VALUE_FIELDS = {
     "from": NULLABLE_TEXT,
     "until": NULLABLE_TEXT,
     "text": NULLABLE_TEXT,
-    "tag": {"type": ["string", "null"], "enum": [*TAGS, None]},
+    "tag": {"anyOf": [{"type": "string", "enum": TAGS}, {"type": "null"}]},
 }
 FACT = {
     "type": "object",
