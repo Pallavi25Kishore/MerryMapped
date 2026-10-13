@@ -1,0 +1,25 @@
+# Site review for brugge.be
+# Written by code on 2026-10-13: the site's robots.txt blocks our reader, so its terms could not be
+# read and nothing was drafted by AI.
+# robots.txt on 2026-10-13 (for information; the engine checks the current one on every visit):
+#   found; MerryMappedBot may fetch the start page; AI bots blocked: GPTBot, ClaudeBot, anthropic-ai, CCBot, Google-Extended, Bytespider, cohere-ai; crawl delay 10 seconds.
+# Approve by committing this file; reject by deleting it.
+reviewed_on: 2026-10-13
+terms_urls:
+- https://www.brugge.be/robots.txt
+automated_access:
+  answer: deny
+  because: The site's robots.txt blocks this page for GPTBot; the terms could not be read
+purposes:
+  collect_facts:
+    answer: deny
+    because: 'Follows from robots.txt: The site''s robots.txt blocks this page for GPTBot'
+  keep_evidence:
+    answer: deny
+    because: 'Follows from robots.txt: The site''s robots.txt blocks this page for GPTBot'
+  write_summary:
+    answer: deny
+    because: 'Follows from robots.txt: The site''s robots.txt blocks this page for GPTBot'
+  show_link:
+    answer: allow
+    because: Linking needs no download, and nothing forbids it
