@@ -28,3 +28,6 @@ docs/
 
 # Runtime logs stay local
 backend/logs/
+
+# Downloaded timetable files (GTFS) stay local
+backend/data/
