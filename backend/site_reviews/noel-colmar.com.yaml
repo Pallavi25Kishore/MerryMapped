@@ -1,0 +1,29 @@
+# Site review for noel-colmar.com
+# Drafted by AI (claude-sonnet-5-5) on 2026-10-13, using backend/prompts/clause_guide.md,
+# from the terms pages listed below. Read every answer against those pages.
+# robots.txt on 2026-10-13 (for information; the engine checks the current one on every visit):
+#   found; MerryMappedBot may fetch the start page; no AI bots blocked; no crawl delay.
+# Approve by committing this file; reject by deleting it.
+reviewed_on: 2026-10-13
+terms_urls:
+- https://www.noel-colmar.com/en/?view=article&id=19:mentions-legales&catid=2
+automated_access:
+  answer: allow
+  because: 'Row 1: terms reviewed (Mentions légales), no clause restricts bots, crawling or automated
+    access'
+purposes:
+  collect_facts:
+    answer: allow
+    because: 'Row 1: terms reviewed, no clause restricts collecting facts; the section "Droits d''exploitation
+      et protection des matériels" only contains liability disclaimers'
+  keep_evidence:
+    answer: allow
+    because: 'Row 1: terms reviewed, no clause restricts quoting or reproduction of a short factual sentence'
+  write_summary:
+    answer: allow
+    because: 'Row 1: terms reviewed, no clause restricts summaries or derivative works'
+  show_link:
+    answer: allow
+    because: 'Row 1: terms reviewed, no clause restricts linking to the site; the only link clause ("Des
+      liens vers d''autres sites peuvent vous faire sortir du site www.noel-colmar.com ; nous n''acceptons
+      aucune responsabilité sur les sites pointés.") concerns the site''s own outgoing links and liability'
