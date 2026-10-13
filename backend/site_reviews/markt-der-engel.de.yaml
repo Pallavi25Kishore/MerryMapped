@@ -1,0 +1,43 @@
+# Site review for markt-der-engel.de
+# Drafted by AI (claude-sonnet-5-5) on 2026-10-13, using backend/prompts/clause_guide.md,
+# from the terms pages listed below. Read every answer against those pages.
+# robots.txt on 2026-10-13 (for information; the engine checks the current one on every visit):
+#   found; MerryMappedBot may fetch the start page; no AI bots blocked; no crawl delay.
+# Approve by committing this file; reject by deleting it.
+reviewed_on: 2026-10-13
+terms_urls:
+- https://www.markt-der-engel.de/impressum/
+- https://www.markt-der-engel.de/datenschutz/
+automated_access:
+  answer: allow
+  because: 'Row 10: "Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb
+    der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers."
+    (Impressum, Urheberrecht). It is the standard German copyright notice and adds no restriction. No
+    clause bans bots or automated access. Rows 9a and 9b also allow: "Downloads und Kopien dieser Seite
+    sind nur für den privaten, nicht kommerziellen Gebrauch gestattet."'
+purposes:
+  collect_facts:
+    answer: allow
+    because: 'Row 10: "Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb
+      der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw.
+      Erstellers." (Impressum, Urheberrecht). The clause only covers uses outside copyright limits. No
+      text-and-data-mining reservation or AI ban was found. Rows 9a and 9b also allow: "nur für den privaten,
+      nicht kommerziellen Gebrauch gestattet".'
+  keep_evidence:
+    answer: allow
+    because: 'Row 10: "Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb
+      der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw.
+      Erstellers." (Impressum, Urheberrecht). The notice excludes what copyright law allows, such as one
+      short factual quote. No clause bans quoting.'
+  write_summary:
+    answer: allow
+    because: 'Row 10: "Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb
+      der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw.
+      Erstellers." (Impressum, Urheberrecht). The clause adds no restriction, and no clause forbids summaries.
+      A short paragraph written in our own words from collected facts is allowed.'
+  show_link:
+    answer: allow
+    because: 'Row 10: "Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb
+      der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw.
+      Erstellers." (Impressum, Urheberrecht). No clause requires permission for linking. The "Haftung
+      für Links" section only concerns the site''s own outgoing links and is ignored (row 13).'
