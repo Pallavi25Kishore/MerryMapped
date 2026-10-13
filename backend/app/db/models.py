@@ -23,7 +23,7 @@ class Fact(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     market_id: Mapped[int] = mapped_column(ForeignKey("markets.id"))
-    kind: Mapped[str]  # opening_date, closing_date, hours, closed_day or address
+    kind: Mapped[str]  # opening_date, closing_date, hours, closed_on, special_hours or address
     value: Mapped[dict] = mapped_column(JSON)
     evidence_quote: Mapped[str]
     evidence_translation: Mapped[str | None]

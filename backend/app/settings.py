@@ -7,3 +7,6 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 # The Claude model that drafts site reviews.
 TERMS_READER_MODEL = "claude-sonnet-5-5"
+
+# The Claude model that reads market pages for facts.
+MARKET_READER_MODEL = "claude-sonnet-5-5"
