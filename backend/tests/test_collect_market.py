@@ -97,3 +97,9 @@ def test_no_description_when_the_review_denies_it(tmp_path, monkeypatch, capsys)
 
     assert "Description not written: Admin-approved review (2026-10-20) denies this" in capsys.readouterr().out
     assert saved is None
+
+
+def test_a_missing_address_falls_back_to_the_city():
+    found = Collected(facts=[], dropped=[], missing=["address"], steps=[], summary="x")
+
+    assert collect_market.report(found).endswith("Missing: address (the city is used instead)")
