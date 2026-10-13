@@ -31,12 +31,12 @@ FEEDS = [
         name="germany_long_distance",
         url="https://download.gtfs.de/germany/fv_free/latest.zip",
         licence="CC BY 4.0",
-        credit="gtfs.de",
+        credit="DELFI e.V. via gtfs.de",
     ),
     Feed(
         name="germany_regional",
         url="https://download.gtfs.de/germany/rv_free/latest.zip",
         licence="CC BY 4.0",
-        credit="gtfs.de",
+        credit="DELFI e.V. via gtfs.de",
     ),
 ]

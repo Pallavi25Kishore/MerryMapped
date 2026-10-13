@@ -65,8 +65,9 @@ def services_by_day(folder: Path, days: set[date]) -> dict[str, set[date]]:
     return running
 
 
-def read_feed(folder: Path, days: set[date], stations: set[str]) -> list[Run]:
-    """Every train run on the given days that stops at one of the given stations."""
+def read_feed(folder: Path, days: set[date], stations: set[str] | None = None) -> list[Run]:
+    """Every train run on the given days that stops at one of the given stations
+    (or every train run, if no stations are given)."""
     names = {row["stop_id"]: row["stop_name"] for row in rows(folder / "stops.txt")}
     train_routes = {row["route_id"] for row in rows(folder / "routes.txt") if is_train(row["route_type"])}
     running = services_by_day(folder, days)
@@ -91,7 +92,7 @@ def read_feed(folder: Path, days: set[date], stations: set[str]) -> list[Run]:
     runs = []
     for trip_id, numbered in stop_lists.items():
         stops = tuple(stop for _, stop in sorted(numbered, key=lambda pair: pair[0]))
-        if not any(stop.station in stations for stop in stops):
+        if stations is not None and not any(stop.station in stations for stop in stops):
             continue
         for day in sorted(trip_days[trip_id]):
             runs.append(Run(folder.name, trip_id, day, stops))
