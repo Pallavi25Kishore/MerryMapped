@@ -10,7 +10,8 @@ Committing this file is the admin's approval of the rules themselves.
 - **A** `automated_access`: may a bot visit the site's pages at all?
 - **C** `collect_facts`: may a bot or AI read pages and note facts (dates, hours, location)?
 - **E** `keep_evidence`: may we store, translate and show one short quoted sentence as proof of a fact?
-- **S** `write_summary`: may we reword the market description briefly, in our own words?
+- **S** `write_summary`: may we write a short paragraph about the market (at most 5 sentences) in our
+  own words, from the facts we collected?
 - **L** `show_link`: may we show a link to the site?
 
 Never write `read_terms` or `copy_text_or_photos`: engine rules decide those.
@@ -107,11 +108,13 @@ Never write `read_terms` or `copy_text_or_photos`: engine rules decide those.
 - **Answers:** A allow · C allow · E allow · S allow · L allow
 - **Why:** ideas, themes and facts are not protected, and a new text with enough distance from the
   original is not an adaptation (§23(1) sentence 2 UrhG).
-- **Condition** (enforced by the summary writer): one or two sentences, our own words and
-  structure, and it must pass the overlap check.
-- *(It may be argued that a one- or two-sentence summary in our own words reuses no protected
-  expression, only ideas and facts, which copyright never protects, so there is nothing to adapt.
-  US law draws the same line between ideas and expression.)*
+- **Condition** (enforced by the description writer): at most five sentences, written only from
+  collected facts and details, never from the site's text, and it must pass the overlap check (no
+  run of 6 or more words shared with any page read).
+- *(It may be argued that a paragraph written only from collected facts, by a writer that never
+  sees the site's text, reuses no protected expression, only ideas and facts, which copyright
+  never protects, so there is nothing to adapt. US law draws the same line between ideas and
+  expression.)*
 
 ### 6b. No summaries, rewording or paraphrasing
 - **Examples:** "keine Zusammenfassungen" · "résumé interdit"
