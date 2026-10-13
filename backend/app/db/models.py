@@ -29,7 +29,7 @@ class Fact(Base):
     evidence_quote: Mapped[str | None]  # None when the site's review doesn't allow keeping quotes
     evidence_translation: Mapped[str | None]
     source_url: Mapped[str]
-    page_fingerprint: Mapped[str]
+    page_fingerprint: Mapped[str | None]  # None for facts entered by hand (no page downloaded)
     checked_on: Mapped[date]
     status: Mapped[str] = mapped_column(default="checked")
 
