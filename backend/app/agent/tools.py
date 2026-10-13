@@ -3,6 +3,7 @@ from app.fetcher.safe_fetcher import SafeFetcher
 from app.reading.clean import CleanPage, clean_html
 from app.reading.fact_checks import check_facts, drop_contradictions
 from app.reading.market_reader import read_page
+from app.rules.decision import Decision
 from app.rules.engine import site_of
 from app.rules.purposes import Purpose
 
@@ -53,6 +54,8 @@ class AgentTools:
         self.dropped: list[tuple[str, dict, str]] = []  # (page, fact, reason)
         self.steps: list[str] = []                      # one line per tool call, for the run report
         self.summary: str | None = None
+        self.page_texts: list[str] = []               # in memory only, for the overlap check
+        self.description_allowed: Decision | None = None
 
     def open_page(self, url: str, reason: str) -> dict:
         if site_of(url) != self.site:
@@ -74,6 +77,9 @@ class AgentTools:
         self.opened.add(result.url)
 
         page = clean_html(result.content, result.url)
+        self.page_texts.append(page.text)
+        if self.description_allowed is None:
+            self.description_allowed = self.fetcher.ask(result.url, Purpose.WRITE_SUMMARY)
         kept, dropped = check_facts(read_page(result.url, page.text, client=self.client), page.text)
         stamp = {"source_url": result.url, "page_fingerprint": result.fingerprint}
         quotes = self.fetcher.ask(result.url, Purpose.KEEP_EVIDENCE)

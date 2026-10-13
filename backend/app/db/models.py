@@ -16,6 +16,7 @@ class Market(Base):
     city: Mapped[str]
     country: Mapped[str]  # "DE", "BE" or "FR"
     website: Mapped[str] = mapped_column(unique=True)
+    description: Mapped[str | None]  # written from checked facts only; None if not allowed or failed
 
 
 class Fact(Base):

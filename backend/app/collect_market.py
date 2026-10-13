@@ -8,6 +8,7 @@ from app.agent.onboarding import Collected, onboard
 from app.db.connection import make_engine
 from app.db.models import create_tables
 from app.db.save import MarketDetails, save_market
+from app.reading.description_writer import DescriptionFailed, write_description
 
 
 def report(collected: Collected) -> str:
@@ -40,12 +41,34 @@ def main(argv: list[str] | None = None) -> None:
     collected = onboard(args.website)
     print(report(collected))
 
+    details = MarketDetails(args.name, args.city, args.country, args.website)
+    description = describe(details, collected)
+
     engine = make_engine()
     create_tables(engine)
-    details = MarketDetails(args.name, args.city, args.country, args.website)
     with Session(engine) as session, session.begin():  # all or nothing
-        save_market(session, details, collected, date.today())
-    print(f"\nSaved {len(collected.facts)} facts for {args.name}.")
+        save_market(session, details, collected, date.today(), description)
+    print(f"\nSaved {len(collected.facts)} facts for {args.name}"
+          + (" with a description." if description else " without a description."))
+
+
+def describe(details: MarketDetails, collected: Collected) -> str | None:
+    """The market's description, if the site's review allows it and it passes the checks."""
+    allowed = collected.description_allowed
+    if allowed is None or not allowed.allowed:
+        print(f"\nDescription not written: {allowed.reason if allowed else 'no page was read'}")
+        return None
+    if not collected.facts:
+        print("\nDescription not written: no checked facts")
+        return None
+    try:
+        description = write_description(details.name, details.city, details.country,
+                                        collected.facts, collected.page_texts)
+    except DescriptionFailed as failed:
+        print(f"\nDescription not written: it failed the checks twice ({failed})")
+        return None
+    print(f"\nDescription:\n  {description}")
+    return description
 
 
 if __name__ == "__main__":

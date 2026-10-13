@@ -18,13 +18,15 @@ class MarketDetails:
     website: str
 
 
-def save_market(session: Session, details: MarketDetails, collected: Collected, today: date) -> Market:
+def save_market(session: Session, details: MarketDetails, collected: Collected, today: date,
+                description: str | None = None) -> Market:
     """Find or create the market, and replace its facts with the newly checked ones. The caller commits."""
     market = session.scalars(select(Market).where(Market.website == details.website)).one_or_none()
     if market is None:
         market = Market(website=details.website)
         session.add(market)
     market.name, market.city, market.country = details.name, details.city, details.country
+    market.description = description
     session.flush()  # the database gives a new market its id
 
     session.execute(delete(Fact).where(Fact.market_id == market.id))

@@ -32,9 +32,9 @@ def engine():
     return engine
 
 
-def save(engine, details, found, today=date(2026, 10, 20)):
+def save(engine, details, found, today=date(2026, 10, 20), description=None):
     with Session(engine) as session, session.begin():
-        save_market(session, details, found, today)
+        save_market(session, details, found, today, description)
 
 
 def facts_of(engine, details):
@@ -84,3 +84,11 @@ def test_a_fact_without_its_quote_is_saved(engine):
     saved = facts_of(engine, COLOGNE)[1][0]
     assert (saved.evidence_quote, saved.evidence_translation) == (None, None)
     assert saved.source_url == "https://koeln-market.example/de/"
+
+
+def test_the_description_is_saved_and_replaced_on_a_rerun(engine):
+    save(engine, COLOGNE, collected(), description="First description.")
+    save(engine, COLOGNE, collected(), description="Second description.")
+
+    with Session(engine) as session:
+        assert session.scalars(select(Market)).one().description == "Second description."

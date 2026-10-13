@@ -29,6 +29,9 @@ purposes:
   keep_evidence:
     answer: allow
     because: 'Row 1: terms reviewed, no clause restricts quoting'
+  write_summary:
+    answer: allow
+    because: 'Row 1: terms reviewed, no clause restricts summaries'
 """
 
 REVIEW_WITHOUT_QUOTES = REVIEW.replace("""  keep_evidence:
@@ -116,3 +119,11 @@ def test_quotes_are_removed_when_the_review_denies_it(tmp_path):
     assert (fact["evidence_quote"], fact["evidence_translation"]) == (None, None)
     assert fact["quote_not_kept"] == "Admin-approved review (2026-10-20) denies this"
     assert fact["source_url"] == START
+
+
+def test_page_text_is_kept_and_the_description_decision_recorded(tmp_path):
+    agent = tools(tmp_path, home_site())
+    agent.open_page(START, "home page")
+
+    assert "Der Markt ist vom 16.11. bis 23.12. geöffnet." in agent.page_texts[0]
+    assert agent.description_allowed.allowed

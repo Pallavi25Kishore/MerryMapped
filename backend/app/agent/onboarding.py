@@ -1,11 +1,12 @@
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import anthropic
 
 from app.agent.tools import TOOLS, AgentTools
 from app.reading.fact_checks import drop_contradictions
+from app.rules.decision import Decision
 from app.settings import ONBOARDING_AGENT_MODEL
 
 AGENT_PROMPT = Path(__file__).resolve().parents[2] / "prompts" / "onboarding_agent.md"
@@ -21,6 +22,8 @@ class Collected:
     missing: list[str]
     steps: list[str]
     summary: str
+    page_texts: list[str] = field(default_factory=list)  # in memory only, for the overlap check
+    description_allowed: Decision | None = None            # the engine's answer for write_summary
 
 
 def onboard(start_url: str, tools: AgentTools | None = None, client=None,
@@ -54,6 +57,8 @@ def onboard(start_url: str, tools: AgentTools | None = None, client=None,
         missing=tools.missing(),
         steps=tools.steps,
         summary=tools.summary or "stopped by the guardrails",
+        page_texts=tools.page_texts,
+        description_allowed=tools.description_allowed,
     )
 
 

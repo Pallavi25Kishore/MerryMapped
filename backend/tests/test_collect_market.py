@@ -3,7 +3,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 import app.collect_market as collect_market
+from dataclasses import replace
+
 from app.agent.onboarding import Collected
+from app.rules.decision import Basis, Decision
 from app.db.connection import make_engine
 from app.db.models import Fact, Market
 from tests.test_db_save import fact
@@ -42,7 +45,7 @@ def test_the_command_collects_and_saves(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(collect_market, "onboard", lambda website: FOUND)
     collect_market.main(ARGS)
 
-    assert "Saved 1 facts for Pretend Cathedral Market." in capsys.readouterr().out
+    assert "Saved 1 facts for Pretend Cathedral Market without a description." in capsys.readouterr().out
     with Session(make_engine(database)) as session:
         market = session.scalars(select(Market)).one()
         assert (market.name, market.city, market.country) == ("Pretend Cathedral Market", "Köln", "DE")
@@ -62,3 +65,35 @@ def test_report_says_when_a_quote_was_not_kept():
 
     assert "quote not kept: The site's terms deny this" in text
     assert "quote:" not in text
+
+
+ALLOWED = Decision(True, "Admin-approved review (2026-10-20) allows this", Basis.SITE_TERMS, "Row 1")
+DENIED = Decision(False, "Admin-approved review (2026-10-20) denies this", Basis.SITE_TERMS, "Row 6b")
+
+
+def run_command(tmp_path, monkeypatch, found, writer):
+    database = f"sqlite:///{tmp_path / 'merry.db'}"
+    monkeypatch.setenv("DATABASE_URL", database)
+    monkeypatch.setattr(collect_market, "onboard", lambda website: found)
+    monkeypatch.setattr(collect_market, "write_description", writer)
+    collect_market.main(ARGS)
+    with Session(make_engine(database)) as session:
+        return session.scalars(select(Market)).one().description
+
+
+def test_the_description_is_written_and_saved_when_allowed(tmp_path, monkeypatch, capsys):
+    found = replace(FOUND, description_allowed=ALLOWED, page_texts=["Seite"])
+    saved = run_command(tmp_path, monkeypatch, found, lambda *args: "A market on Roncalliplatz.")
+
+    out = capsys.readouterr().out
+    assert "Description:\n  A market on Roncalliplatz." in out
+    assert "with a description." in out
+    assert saved == "A market on Roncalliplatz."
+
+
+def test_no_description_when_the_review_denies_it(tmp_path, monkeypatch, capsys):
+    found = replace(FOUND, description_allowed=DENIED)
+    saved = run_command(tmp_path, monkeypatch, found, lambda *args: pytest.fail("must not be called"))
+
+    assert "Description not written: Admin-approved review (2026-10-20) denies this" in capsys.readouterr().out
+    assert saved is None
