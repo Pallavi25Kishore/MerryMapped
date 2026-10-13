@@ -1,0 +1,28 @@
+# Site review for striezelmarkt.dresden.de
+# Drafted by AI (claude-sonnet-5-5) on 2026-10-13, using backend/prompts/clause_guide.md,
+# from the terms pages listed below. Read every answer against those pages.
+# robots.txt on 2026-10-13 (for information; the engine checks the current one on every visit):
+#   found; MerryMappedBot may fetch the start page; no AI bots blocked; no crawl delay.
+# Approve by committing this file; reject by deleting it.
+reviewed_on: 2026-10-13
+terms_urls:
+- https://www.dresden.de/de/sonstiges/impressum.php
+- https://striezelmarkt.dresden.de/de/sonstiges/datenschutz.php
+automated_access:
+  answer: allow
+  because: 'Row 1: terms reviewed (Impressum and Datenschutz), no clause restricts automated access'
+purposes:
+  collect_facts:
+    answer: allow
+    because: 'Row 1: terms reviewed, no clause restricts collecting facts; the only copyright mention
+      is the bare notice "© 2025 Landeshauptstadt Dresden" (Impressum), which adds no restriction'
+  keep_evidence:
+    answer: allow
+    because: 'Row 1: terms reviewed, no clause restricts keeping a short quoted sentence as evidence'
+  write_summary:
+    answer: allow
+    because: 'Row 1: terms reviewed, no clause restricts writing a summary in our own words'
+  show_link:
+    answer: allow
+    because: 'Row 1: terms reviewed, no clause restricts linking; the Haftungsausschluss and Datenschutz
+      clauses on links and liability are irrelevant (row 13)'
