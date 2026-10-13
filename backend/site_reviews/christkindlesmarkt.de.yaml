@@ -1,0 +1,30 @@
+# Site review for christkindlesmarkt.de
+# Drafted by AI (claude-sonnet-5-5) on 2026-10-13, using backend/prompts/clause_guide.md,
+# from the terms pages listed below. Read every answer against those pages.
+# robots.txt on 2026-10-13 (for information; the engine checks the current one on every visit):
+#   found; MerryMappedBot may fetch the start page; no AI bots blocked; no crawl delay.
+# Approve by committing this file; reject by deleting it.
+reviewed_on: 2026-10-13
+terms_urls:
+- https://www.christkindlesmarkt.de/service/impressum-1.2209599
+- https://www.christkindlesmarkt.de/service/datenschutzinformationen-1.2209600
+automated_access:
+  answer: allow
+  because: 'Row 1: terms reviewed (Impressum and Datenschutzinformationen), no clause restricts automated
+    access'
+purposes:
+  collect_facts:
+    answer: allow
+    because: 'Row 1: terms reviewed, no clause restricts collecting facts (the only AI mention, in Datenschutzinformationen
+      2.3, describes an e-mail filter for the voting and is not a restriction)'
+  keep_evidence:
+    answer: allow
+    because: 'Row 1: terms reviewed, no clause restricts storing or quoting a short factual sentence as
+      evidence'
+  write_summary:
+    answer: allow
+    because: 'Row 1: terms reviewed, no clause restricts writing a short summary in our own words'
+  show_link:
+    answer: allow
+    because: 'Row 1: terms reviewed, no clause restricts linking (Datenschutzinformationen 4 only describes
+      the site''s own links to third parties)'
