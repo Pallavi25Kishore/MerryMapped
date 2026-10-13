@@ -1,6 +1,8 @@
 # Site review for koelnerweihnachtsmarkt.com
 # Drafted by AI (claude-sonnet-5-5) on 2026-10-12, using backend/prompts/clause_guide.md,
 # from the terms pages listed below. Read every answer against those pages.
+# robots.txt on 2026-10-13 (for information; the engine checks the current one on every visit):
+#   no robots.txt, so no restrictions.
 # Approve by committing this file; reject by deleting it.
 reviewed_on: 2026-10-12
 terms_urls:
