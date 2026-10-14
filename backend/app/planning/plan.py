@@ -11,6 +11,7 @@ class Settings:
     min_market_minutes: int = 120  # at least 2 hours at each market, while it is open
     max_travel_minutes: int = 6 * 60  # at most 6 hours of train travel in one day
     max_markets_per_day: int = 2  # in the same city
+    day_trips: bool = False  # on only when the user asks for day trips
 
 
 @dataclass(frozen=True)
@@ -24,11 +25,13 @@ class Travel:
 @dataclass(frozen=True)
 class Day:
     """One day of the trip: the travel (if any), the markets visited (by id), and the city
-    slept in that night. With travel, the markets are in the city travelled to."""
+    slept in that night. With travel, the markets are in the city travelled to. A day trip
+    (only when Settings.day_trips is on) also has travel_back, from that city to sleep_in."""
     day: date
     travel: Travel | None
     visits: tuple[int, ...]
     sleep_in: str
+    travel_back: Travel | None = None
 
 
 @dataclass(frozen=True)
