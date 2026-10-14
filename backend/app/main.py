@@ -1,13 +1,22 @@
 import os
 import secrets
 from dataclasses import asdict, fields
-from datetime import date
+from datetime import date, datetime, timezone
+from functools import cache
 
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
-from app.planning.plan import Settings
-from app.planning.understand import FIRST_DAY, LAST_DAY, SETTING_RANGES, Form, understand
+from app.db.connection import make_engine
+from app.db.models import Trip, create_tables
+from app.planning.checker import load_markets
+from app.planning.itinerary import build_itinerary
+from app.planning.plan import Settings, TripRequest
+from app.planning.planner import plan_trip, trip_days
+from app.planning.trains import load_links
+from app.planning.understand import FIRST_DAY, LAST_DAY, SETTING_RANGES, Form, merge, understand
+from app.planning.wishes import review_wishes
 from app.trains.stations import STATIONS
 
 app = FastAPI(title="MerryMapped")
@@ -22,6 +31,26 @@ def require_access(x_access_code: str = Header("")) -> None:
 
 
 api = APIRouter(prefix="/api", dependencies=[Depends(require_access)])
+
+
+@cache
+def engine():
+    """The database engine, made on first use; new tables (such as trips) are created then."""
+    made = make_engine()
+    create_tables(made)
+    return made
+
+
+def get_session():
+    with Session(engine()) as session:
+        yield session
+
+
+def request_json(request: TripRequest) -> dict:
+    return {"first_day": request.first_day.isoformat(), "last_day": request.last_day.isoformat(),
+            "start_city": request.start_city, "end_city": request.end_city,
+            "settings": asdict(request.settings),
+            "wishes": [wish for wish in request.wishes.split("; ") if wish], "tags": list(request.tags)}
 
 
 @app.get("/health")
@@ -68,18 +97,57 @@ def understand_form(form: FormIn):
     are usable), notes on what was changed or is missing, and what MerryMapped cannot do."""
     understood = understand(Form(form.text, form.first_day, form.last_day, form.start_city, form.end_city,
                                  form.settings.model_dump(exclude_none=True)))
+    return {"request": understood.request and request_json(understood.request),
+            "notes": understood.notes, "not_covered": understood.not_covered}
+
+
+COULD_NOT_PLAN = "The planner could not make a plan; please try again."
+
+
+class PlanIn(BaseModel):
+    """The request as confirmed on the confirm screen."""
+    first_day: date
+    last_day: date
+    start_city: str | None = None
+    end_city: str | None = None
+    settings: SettingsIn = SettingsIn()
+    wishes: list[str] = Field([], max_length=20)
+    tags: list[str] = []
+    not_covered: list[str] = Field([], max_length=20)
+
+
+@api.post("/plan")
+def plan(confirmed: PlanIn, session: Session = Depends(get_session)):
+    """Plan the confirmed trip: check it again, plan and check (repairing what cannot be fixed),
+    review the wishes, then save the trip and return it with its itinerary."""
+    form = Form("", confirmed.first_day, confirmed.last_day, confirmed.start_city, confirmed.end_city,
+                confirmed.settings.model_dump(exclude_none=True))
+    read = {"first_day": None, "last_day": None, "start_city": None, "end_city": None,
+            "tags": confirmed.tags, "wishes": confirmed.wishes, "not_covered": confirmed.not_covered}
+    understood = merge(form, read)
+    if understood.request is None or understood.notes:
+        raise HTTPException(status_code=422, detail=understood.notes)
     request = understood.request
-    return {
-        "request": request and {
-            "first_day": request.first_day.isoformat(), "last_day": request.last_day.isoformat(),
-            "start_city": request.start_city, "end_city": request.end_city,
-            "settings": asdict(request.settings),
-            "wishes": [wish for wish in request.wishes.split("; ") if wish],
-            "tags": list(request.tags),
-        },
-        "notes": understood.notes,
-        "not_covered": understood.not_covered,
-    }
+
+    markets = load_markets(session)
+    planned = plan_trip(request, markets, load_links(session, trip_days(request)))
+    fixed = planned.repaired
+    if planned.plan is None:
+        raise HTTPException(status_code=502, detail=COULD_NOT_PLAN)
+    final_plan, result = (fixed.plan, fixed.result) if fixed else (planned.plan, planned.result)
+    days = tuple(f"{day.day:%a %d %b}:" for day in final_plan.days)
+    if any(not problem.startswith(days) for problem in result.problems):  # such as wrong dates: not one day's problem
+        raise HTTPException(status_code=502, detail=COULD_NOT_PLAN)
+    notes = review_wishes(request, final_plan, markets, understood.not_covered)
+    itinerary = build_itinerary(final_plan, result, markets, fixed.removed if fixed else [],
+                                fixed.day_tips if fixed else {}, notes)
+
+    trip = Trip(id=secrets.token_urlsafe(12), created_at=datetime.now(timezone.utc).replace(tzinfo=None),  # UTC
+                request=request_json(request), itinerary=itinerary)
+    session.add(trip)
+    session.commit()
+    return {"trip_id": trip.id, "created_at": trip.created_at.isoformat(), "request": trip.request,
+            "itinerary": itinerary}
 
 
 app.include_router(api)  # after every /api address is defined
