@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 
-client = TestClient(app)
+client = TestClient(app, headers={"X-Access-Code": "pretend-code"})
 
 
 def test_options_give_the_form_its_dates_cities_and_settings():

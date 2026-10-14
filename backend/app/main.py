@@ -1,7 +1,9 @@
+import os
+import secrets
 from dataclasses import asdict, fields
 from datetime import date
 
-from fastapi import FastAPI
+from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from app.planning.plan import Settings
@@ -11,13 +13,24 @@ from app.trains.stations import STATIONS
 app = FastAPI(title="MerryMapped")
 
 
+def require_access(x_access_code: str = Header("")) -> None:
+    """Every /api request must carry the access code from backend/.env in the X-Access-Code
+    header. With no code set, everything is refused rather than left open."""
+    code = os.environ.get("ACCESS_CODE", "")
+    if not code or not secrets.compare_digest(x_access_code.encode(), code.encode()):
+        raise HTTPException(status_code=401, detail="Not allowed: a valid access code is needed.")
+
+
+api = APIRouter(prefix="/api", dependencies=[Depends(require_access)])
+
+
 @app.get("/health")
 def health():
     """Report that the backend is running."""
     return {"status": "ok"}
 
 
-@app.get("/api/options")
+@api.get("/options")
 def options():
     """What the trip form needs: the dates a trip can use, our cities, and each setting's default
     and allowed range (times in minutes after midnight, durations in minutes)."""
@@ -49,7 +62,7 @@ class FormIn(BaseModel):
     settings: SettingsIn = SettingsIn()
 
 
-@app.post("/api/understand")
+@api.post("/understand")
 def understand_form(form: FormIn):
     """The confirm screen: the request read from the form and the typed text (null until the dates
     are usable), notes on what was changed or is missing, and what MerryMapped cannot do."""
@@ -67,3 +80,6 @@ def understand_form(form: FormIn):
         "notes": understood.notes,
         "not_covered": understood.not_covered,
     }
+
+
+app.include_router(api)  # after every /api address is defined
