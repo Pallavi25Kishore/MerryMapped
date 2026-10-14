@@ -37,7 +37,7 @@ def settings_text(settings: Settings) -> str:
 
 
 def trip_text(request: TripRequest) -> str:
-    """The request: dates, start and end city, settings, wishes and picked tags."""
+    """The request: dates, start and end city, settings, wishes and the tags found in them."""
     days = trip_days(request)
     lines = [
         f"Dates: {request.first_day:%a %d %b} to {request.last_day:%a %d %b} ({len(days)} days)",
@@ -47,12 +47,13 @@ def trip_text(request: TripRequest) -> str:
         f"Wishes: {request.wishes or 'none given'}",
     ]
     if request.tags:
-        lines.append("Picked tags: " + "; ".join(f"{tag} ({TAGS.get(tag, 'no meaning known')})" for tag in request.tags))
+        lines.append("Tags from the wishes: " + "; ".join(f"{tag} ({TAGS.get(tag, 'no meaning known')})" for tag in request.tags))
     return "\n".join(lines)
 
 
-def market_text(market_id: int, market: MarketInfo, days: list[date]) -> str:
-    """One market: name, city, description, tags, details, and its hours on each day of the trip."""
+def market_text(market_id: int, market: MarketInfo, days: list[date], wish_tags: tuple[str, ...] = ()) -> str:
+    """One market: name, city, description, tags (and which match the wishes), details, and its
+    hours on each day of the trip."""
     values = lambda kind: [fact["value"] for fact in market.facts if fact["kind"] == kind]
     hours = []
     for day in days:
@@ -63,6 +64,9 @@ def market_text(market_id: int, market: MarketInfo, days: list[date]) -> str:
              f"Tags: {', '.join(v['tag'] for v in values('tag')) or 'none'}",
              f"Details: {'; '.join(v['text'] for v in values('detail')) or 'none'}",
              f"Open: {'; '.join(hours)}"]
+    matching = [tag for tag in wish_tags if tag in {v["tag"] for v in values("tag")}]
+    if matching:
+        lines.insert(3, f"Matches the wishes: {', '.join(matching)}")
     return "\n".join(lines)
 
 
@@ -120,7 +124,7 @@ def parse_plan(reply: str) -> Plan | str:
 
 def plan_message(request: TripRequest, markets: dict[int, MarketInfo], links: Links) -> str:
     days = trip_days(request)
-    market_blocks = "\n\n".join(market_text(market_id, market, days) for market_id, market in sorted(markets.items()))
+    market_blocks = "\n\n".join(market_text(market_id, market, days, request.tags) for market_id, market in sorted(markets.items()))
     return ("Plan this trip.\n\n"
             f"<trip>\n{trip_text(request)}\n</trip>\n\n"
             f"<markets>\n{market_blocks}\n</markets>\n\n"

@@ -37,7 +37,7 @@ def facts_of(market: MarketInfo) -> list[str]:
 
 
 def tag_notes(tags: tuple[str, ...], plan: Plan, markets: dict[int, MarketInfo]) -> list[WishNote]:
-    """Picked tags are judged in code: met if a planned market has the tag in its checked facts."""
+    """Tags found in the wishes are judged in code: met if a planned market has the tag in its checked facts."""
     notes = []
     for tag in tags:
         having = [i for i in planned_ids(plan)
@@ -100,7 +100,7 @@ def checked(note: WishNote, plan: Plan, markets: dict[int, MarketInfo]) -> WishN
 
 def review_wishes(request: TripRequest, plan: Plan, markets: dict[int, MarketInfo],
                   not_covered: list[str] = (), client=None, model: str = WISH_REVIEWER_MODEL) -> list[WishNote]:
-    """Notes on every picked tag (by code), every typed wish (by AI, evidence checked in code),
+    """Notes on every tag found in the wishes (by code), every typed wish (by AI, evidence checked in code),
     and everything MerryMapped cannot do."""
     notes = tag_notes(request.tags, plan, markets)
     wishes = [wish.strip() for wish in request.wishes.split(";") if wish.strip()]

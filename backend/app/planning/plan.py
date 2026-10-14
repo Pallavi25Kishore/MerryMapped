@@ -51,7 +51,7 @@ class Plan:
 @dataclass(frozen=True)
 class TripRequest:
     """What the user asked for: the dates, their settings, their wishes in their own words,
-    the tags they picked, and optionally where the trip must start and end."""
+    the tags found in their wishes, and optionally where the trip must start and end."""
     first_day: date
     last_day: date
     settings: Settings = Settings()

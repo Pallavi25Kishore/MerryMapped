@@ -36,8 +36,10 @@ details and tags), and the travel between cities worked out with the traveller's
 
 ## Wishes
 
-- Fit in as many of the traveller's wishes and picked tags as is realistic. The hard rules
-  always come first.
+- Fit in as many of the traveller's wishes and the tags found in them as is realistic. The hard
+  rules always come first.
+- A market marked "Matches the wishes" has a tag the traveller wants: prefer it when the hard
+  rules allow.
 - Plan a market on every day where a market not yet visited fits, unless the traveller's
   wishes say otherwise (for example rest days or a slow pace). A day with no market is fine
   when none fits.

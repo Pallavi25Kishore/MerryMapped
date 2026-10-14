@@ -22,7 +22,7 @@ def test_trip_text_spells_out_the_request():
         "Settings: earliest train 08:00; at least 2 h 00 min at each market; at most 6 h 00 min of travel a day; "
         "up to 2 markets a day; day trips allowed\n"
         "Wishes: quiet markets\n"
-        "Picked tags: medieval (a medieval theme: costumes, old crafts, period music)")
+        "Tags from the wishes: medieval (a medieval theme: costumes, old crafts, period music)")
 
 
 def test_market_text_lists_hours_for_each_trip_day():
@@ -37,6 +37,13 @@ def test_market_text_lists_hours_for_each_trip_day():
         "Details: mulled wine stalls\n"
         "Open: 23 Dec 11:00-21:00; 24 Dec closed")
 
+
+
+def test_market_text_marks_tags_that_match_the_wishes():
+    market = MarketInfo("Pretend market", "Köln", [fact("tag", tag="cathedral"), fact("tag", tag="old-town")])
+    text = market_text(1, market, [D1], wish_tags=("old-town", "medieval"))
+    assert "Tags: cathedral, old-town\nMatches the wishes: old-town\nDetails:" in text
+    assert "Matches the wishes" not in market_text(1, market, [D1], wish_tags=("medieval",))
 
 def leg(start, end, depart, arrive):
     return {"from": start, "to": end, "depart": depart, "arrive": arrive, "feed": "f", "estimate": False, "estimate_from": None}
