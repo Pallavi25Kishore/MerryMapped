@@ -16,6 +16,7 @@ class MarketInfo:
     name: str
     city: str
     facts: list[dict]  # each {"kind": ..., "value": ...}
+    description: str | None = None
 
 
 @dataclass
@@ -30,7 +31,8 @@ def load_markets(session: Session) -> dict[int, MarketInfo]:
     facts = {}
     for fact in session.scalars(select(Fact)):
         facts.setdefault(fact.market_id, []).append({"kind": fact.kind, "value": fact.value})
-    return {m.id: MarketInfo(m.name, m.city, facts.get(m.id, [])) for m in session.scalars(select(Market))}
+    return {m.id: MarketInfo(m.name, m.city, facts.get(m.id, []), m.description)
+            for m in session.scalars(select(Market))}
 
 
 def hhmm(minutes: int) -> str:
