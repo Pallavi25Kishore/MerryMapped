@@ -9,7 +9,8 @@ import { ApiError, getOptions, setAccessCode, type Options, type TripForm } from
 // The trip form inside the planning panel. It first loads what the form needs from the backend
 // (the trip dates, our cities and the settings); without a valid access code it asks for one.
 
-type Load = { state: "loading" } | { state: "code"; wrong: boolean } | { state: "error" } | { state: "ready"; options: Options };
+type Load = { state: "loading" } | { state: "code"; wrong: boolean } | { state: "error"; outdated?: boolean }
+  | { state: "ready"; options: Options };
 
 export default function PlanForm() {
   const [load, setLoad] = useState<Load>({ state: "loading" });
@@ -19,7 +20,12 @@ export default function PlanForm() {
   useEffect(() => {
     let current = true;
     getOptions()
-      .then((options) => current && setLoad({ state: "ready", options }))
+      .then((options) => {
+        if (!current) return;
+        // A backend started before the latest changes may lack fields the form needs.
+        if (!Array.isArray(options.places)) setLoad({ state: "error", outdated: true });
+        else setLoad({ state: "ready", options });
+      })
       .catch((error) => {
         if (!current) return;
         if (error instanceof ApiError && error.needsAccessCode) setLoad({ state: "code", wrong: attempt > 0 });
@@ -39,7 +45,10 @@ export default function PlanForm() {
   if (load.state === "error") {
     return (
       <div className="mt-6">
-        <p className="text-snow/85">The planner can&apos;t be reached right now. Is the backend running?</p>
+        <p className="text-snow/85">
+          {load.outdated ? "The backend is running older code. Please restart it, then try again."
+                         : "The planner can't be reached right now. Is the backend running?"}
+        </p>
         <TicketButton kind="quiet" className="mt-5" onClick={retry}>Try again</TicketButton>
       </div>
     );
@@ -56,12 +65,10 @@ export default function PlanForm() {
                     onChange={(first_day, last_day) => setForm((f) => ({ ...f, first_day, last_day }))} />
       </section>
 
-      <section className="space-y-5">
-        <h3 className="text-sm uppercase tracking-[0.25em] text-gold">Where</h3>
-        <CityPicker label="Start in" cities={options.cities} value={form.start_city}
-                    onChange={(start_city) => setForm((f) => ({ ...f, start_city }))} />
-        <CityPicker label="End in" cities={options.cities} value={form.end_city}
-                    onChange={(end_city) => setForm((f) => ({ ...f, end_city }))} />
+      <section>
+        <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">Where</h3>
+        <CityPicker places={options.places} start={form.start_city} end={form.end_city}
+                    onChange={(start_city, end_city) => setForm((f) => ({ ...f, start_city, end_city }))} />
       </section>
     </div>
   );
