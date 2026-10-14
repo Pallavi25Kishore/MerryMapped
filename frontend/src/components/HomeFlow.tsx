@@ -82,8 +82,7 @@ export default function HomeFlow() {
         <h2 ref={panelHeading} tabIndex={-1} className="font-display text-3xl font-semibold outline-none">
           Plan your trip
         </h2>
-        {opened && <PlanForm />}
-        <TicketButton kind="quiet" className="mt-8" onClick={back}>Back</TicketButton>
+        {opened && <PlanForm onBack={back} />}
       </section>
     </main>
   );

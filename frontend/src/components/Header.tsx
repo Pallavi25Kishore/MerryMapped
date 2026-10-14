@@ -9,7 +9,7 @@ import SoundButton from "@/components/SoundButton";
 const PAGES = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About us" },
-  { href: "/trips", label: "My trips" },
+  { href: "/trips", label: "Your trips" },
 ];
 
 export default function Header() {

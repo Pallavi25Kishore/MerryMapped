@@ -3,16 +3,25 @@
 import { useEffect, useState } from "react";
 import CityPicker from "@/components/CityPicker";
 import DatePicker from "@/components/DatePicker";
+import PaceSettings from "@/components/PaceSettings";
 import TicketButton from "@/components/TicketButton";
 import { ApiError, getOptions, setAccessCode, type Options, type TripForm } from "@/lib/api";
 
 // The trip form inside the planning panel. It first loads what the form needs from the backend
-// (the trip dates, our cities and the settings); without a valid access code it asks for one.
+// (the trip dates, our cities and the settings); without a valid access code it asks for one. The
+// dates are required; everything else has a sensible default. Back and See my plan sit at the end.
+
+const MAX_TEXT = 2000; // the most the backend accepts for typed wishes
 
 type Load = { state: "loading" } | { state: "code"; wrong: boolean } | { state: "error"; outdated?: boolean }
   | { state: "ready"; options: Options };
 
-export default function PlanForm() {
+type Props = {
+  onBack: () => void;
+  onContinue?: (form: TripForm) => void; // See my plan (the confirm screen comes next)
+};
+
+export default function PlanForm({ onBack, onContinue }: Props) {
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const [attempt, setAttempt] = useState(0); // bumped to load again
   const [form, setForm] = useState<TripForm>({});
@@ -41,7 +50,11 @@ export default function PlanForm() {
     setAttempt((n) => n + 1);
   };
 
-  if (load.state === "loading") return <p className="mt-6 text-frost">Preparing your planner…</p>;
+  const back = <TicketButton kind="quiet" onClick={onBack}>Back</TicketButton>;
+
+  if (load.state === "loading") {
+    return <><p className="mt-6 text-frost">Preparing your planner…</p><div className="mt-8">{back}</div></>;
+  }
   if (load.state === "error") {
     return (
       <div className="mt-6">
@@ -49,29 +62,76 @@ export default function PlanForm() {
           {load.outdated ? "The backend is running older code. Please restart it, then try again."
                          : "The planner can't be reached right now. Is the backend running?"}
         </p>
-        <TicketButton kind="quiet" className="mt-5" onClick={retry}>Try again</TicketButton>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          {back}
+          <TicketButton onClick={retry}>Try again</TicketButton>
+        </div>
       </div>
     );
   }
-  if (load.state === "code") return <AccessCode wrong={load.wrong} onEnter={(code) => { setAccessCode(code); retry(); }} />;
+  if (load.state === "code") {
+    return (
+      <>
+        <AccessCode wrong={load.wrong} onEnter={(code) => { setAccessCode(code); retry(); }} />
+        <div className="mt-8">{back}</div>
+      </>
+    );
+  }
 
   const { options } = load;
+  const datesChosen = Boolean(form.first_day && form.last_day);
+  const text = form.text ?? "";
   return (
-    // One column, about 592 px wide. On wide screens, two such columns side by side (same sizes as one
-    // column): the text-like parts on the left, the map on the right.
-    <div className="mt-6 grid gap-8 text-left xl:grid-cols-2 xl:gap-12">
-      <section>
-        <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">When</h3>
-        <DatePicker firstAllowed={options.first_day} lastAllowed={options.last_day}
-                    firstDay={form.first_day} lastDay={form.last_day}
-                    onChange={(first_day, last_day) => setForm((f) => ({ ...f, first_day, last_day }))} />
+    <div className="mt-6 text-left">
+      {/* One column, about 592 px wide. On wide screens, two such columns side by side (same sizes as one
+          column): the text-like parts on the left, the map on the right. */}
+      <div className="grid gap-8 xl:grid-cols-2 xl:gap-12">
+        <div className="space-y-8">
+          <section>
+            <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">
+              When <span className="normal-case tracking-normal text-frost">· required</span>
+            </h3>
+            <DatePicker firstAllowed={options.first_day} lastAllowed={options.last_day}
+                        firstDay={form.first_day} lastDay={form.last_day}
+                        onChange={(first_day, last_day) => setForm((f) => ({ ...f, first_day, last_day }))} />
+          </section>
+
+          <section>
+            <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">Your pace</h3>
+            <PaceSettings ranges={options.settings} changed={form.settings ?? {}}
+                          onChange={(update) => setForm((f) => ({ ...f, settings: update(f.settings ?? {}) }))} />
+          </section>
+        </div>
+
+        {/* Stretches to the left column's height; the map fills what is left under the tabs. */}
+        <section className="flex flex-col">
+          <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">Where</h3>
+          <div className="flex-1">
+            <CityPicker places={options.places} start={form.start_city} end={form.end_city}
+                        onChange={(start_city, end_city) => setForm((f) => ({ ...f, start_city, end_city }))} />
+          </div>
+        </section>
+      </div>
+
+      <section className="mt-8">
+        <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">Your wishes</h3>
+        <label htmlFor="wishes" className="sr-only">Your wishes</label>
+        <textarea id="wishes" rows={3} maxLength={MAX_TEXT} value={text}
+                  onChange={(event) => setForm((f) => ({ ...f, text: event.target.value }))}
+                  placeholder="Tell us what you'd love: old towns, mulled wine, not too touristy…"
+                  className="block w-full resize-y border border-snow/20 bg-night-deep/50 px-4 py-3 text-snow outline-none
+                             transition placeholder:text-snow/35 focus:border-gold" />
+        <div className="mt-2 flex justify-between gap-4 text-sm text-frost">
+          <span>Santa can&apos;t promise everything, but we&apos;ll fit in as many wishes as the trains allow.</span>
+          <span className="tabular-nums">{text.length} / {MAX_TEXT}</span>
+        </div>
       </section>
 
-      <section>
-        <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">Where</h3>
-        <CityPicker places={options.places} start={form.start_city} end={form.end_city}
-                    onChange={(start_city, end_city) => setForm((f) => ({ ...f, start_city, end_city }))} />
-      </section>
+      <div className="mt-8 flex flex-wrap items-center justify-end gap-3">
+        {!datesChosen && <span className="mr-2 text-sm text-frost" aria-live="polite">Choose your dates to continue</span>}
+        {back}
+        <TicketButton disabled={!datesChosen} onClick={() => onContinue?.(form)}>See my plan</TicketButton>
+      </div>
     </div>
   );
 }
