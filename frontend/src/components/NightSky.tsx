@@ -10,8 +10,9 @@ type Dust = { x: number; y: number; size: number; drift: number; rise: number; p
 type Spark = { x: number; y: number; vx: number; vy: number; size: number; life: number };
 
 const FLAKES_PER_PIXEL = 1 / 14000; // about 150 on a large screen; the picture has snow of its own
-const DUST_PER_PIXEL = 1 / 50000; // fairy lights: about 40 on a large screen
-const FAIRY_SIZE = 10; // average radius of a fairy light's glow, in pixels
+const DUST_PER_PIXEL = 1 / 68000; // fairy lights: about 30 on a large screen
+const FAIRY_SIZE = 9; // average radius of a fairy light's glow, in pixels
+const FAIRY_BRIGHTNESS = 0.8; // the brightest a fairy light gets, at the top of its twinkle
 const SPARK_LIFE = 0.7; // seconds a pointer sparkle lasts
 const SPARK_SPREAD = 16; // how fast sparkles drift away from the pointer (pixels a second)
 
@@ -111,7 +112,7 @@ export default function NightSky() {
       }
       ctx.globalCompositeOperation = "lighter"; // overlapping glows add up, like real light
       for (const d of dust) {
-        ctx.globalAlpha = 0.35 + 0.65 * Math.max(0, Math.sin(time * d.twinkle + d.phase));
+        ctx.globalAlpha = FAIRY_BRIGHTNESS * (0.3 + 0.7 * Math.max(0, Math.sin(time * d.twinkle + d.phase)));
         ctx.drawImage(fairy, d.x - d.size, d.y - d.size, d.size * 2, d.size * 2);
       }
       ctx.globalCompositeOperation = "source-over";
