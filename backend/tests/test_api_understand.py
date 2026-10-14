@@ -38,7 +38,8 @@ def test_without_dates_there_is_no_request_yet_and_no_ai_call_for_empty_text(mon
     answer = client.post("/api/understand", json={"start_city": "Köln"}).json()
     assert seen == []
     assert answer["request"] is None
-    assert answer["notes"] == ["Please choose your dates, between 15 and 31 December."]
+    assert answer["notes"] == ["Please pick your dates on the calendar: any days from 15 to 31 December work "
+                               "beautifully."]
 
 
 def test_a_badly_formed_date_is_refused():

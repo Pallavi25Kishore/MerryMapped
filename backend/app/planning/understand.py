@@ -13,8 +13,8 @@ from app.trains.stations import STATIONS
 
 REQUEST_PROMPT = Path(__file__).resolve().parents[2] / "prompts" / "request_reader.md"
 FIRST_DAY, LAST_DAY = TRIP_DAYS[0], TRIP_DAYS[-1]
-OUTSIDE_DATES = ("MerryMapped is a December holiday planner: trips can only be planned between "
-                 f"{FIRST_DAY:%d} and {LAST_DAY:%d %B}.")
+OUTSIDE_DATES = (f"MerryMapped plans trips between {FIRST_DAY:%-d} and {LAST_DAY:%-d %B}, the most magical stretch "
+                 "of the season. Please pick dates in that window.")
 
 # Sensible ranges for each setting; a value outside is reset to the default, with a note.
 SETTING_RANGES = {
@@ -100,32 +100,69 @@ def to_minutes(value: str | None) -> int | None:
         return None
 
 
+def hhmm(minutes: int) -> str:
+    return f"{minutes // 60:02}:{minutes % 60:02}"
+
+
+def duration(minutes: int) -> str:
+    hours, mins = divmod(minutes, 60)
+    return f"{hours} h {mins} min" if hours and mins else f"{hours} h" if hours else f"{mins} min"
+
+
+# How each choice is described to the traveller: in full (what they mentioned), briefly (what the
+# website says), and where on the website it was chosen. Notes are written for travellers: warm,
+# plain, and saying what we did and how to change it.
+DESCRIBE = {
+    "first_day": (lambda d: f"{d:%a %-d %b} as your first day", lambda d: f"{d:%a %-d %b}", "the calendar"),
+    "last_day": (lambda d: f"{d:%a %-d %b} as your last day", lambda d: f"{d:%a %-d %b}", "the calendar"),
+    "start_city": (lambda c: f"starting in {c}", str, "the map"),
+    "end_city": (lambda c: f"finishing in {c}", str, "the map"),
+    "earliest_train": (lambda m: f"trains from {hhmm(m)}", hhmm, "Your pace"),
+    "min_market_minutes": (lambda m: f"{duration(m)} at each market", duration, "Your pace"),
+    "max_travel_minutes": (lambda m: f"{duration(m)} of train travel a day", duration, "Your pace"),
+    "max_markets_per_day": (lambda n: f"{n} {'market' if n == 1 else 'markets'} a day", str, "Your pace"),
+    "day_trips": (lambda on: "day trips" if on else "no day trips", lambda on: "on" if on else "off", "Your pace"),
+}
+
+# What we can plan for each setting, said kindly when a typed value is outside it.
+OUT_OF_RANGE = {
+    "earliest_train": lambda low, high, kept: (f"We can plan trains leaving between {hhmm(low)} and {hhmm(high)}, "
+                                               f"so we've kept your earliest train at {hhmm(kept)}."),
+    "min_market_minutes": lambda low, high, kept: (f"We can plan between {duration(low)} and {duration(high)} at each "
+                                                   f"market, so we've kept it at {duration(kept)}."),
+    "max_travel_minutes": lambda low, high, kept: (f"We can plan between {duration(low)} and {duration(high)} of train "
+                                                   f"travel a day, so we've kept it at {duration(kept)}."),
+    "max_markets_per_day": lambda low, high, kept: (f"We can plan {low} to {high} markets a day, so we've kept it at "
+                                                    f"{kept}."),
+}
+
+
 def merge(form: Form, read: dict) -> Understood:
     """Combine the form and the text: filled-in form fields win, the text fills the empty ones.
     Differences, unusable values and missing dates become notes."""
     notes = []
 
-    def pick(label, from_form, from_text, show=str):
+    def pick(field, from_form, from_text):
         if from_form is not None and from_text is not None and from_form != from_text:
-            notes.append(f"You typed {show(from_text)} for the {label}, but the form says {show(from_form)}; "
-                         "the form is used.")
+            in_full, briefly, where = DESCRIBE[field]
+            notes.append(f"You mentioned {in_full(from_text)}, and {where} says {briefly(from_form)}. "
+                         f"We've gone with {where}, and you can change it there anytime.")
         return from_form if from_form is not None else from_text
 
-    first_day = pick("first day", form.first_day, to_date(read["first_day"]), lambda d: f"{d:%d %b}")
-    last_day = pick("last day", form.last_day, to_date(read["last_day"]), lambda d: f"{d:%d %b}")
-    start_city = pick("start city", form.start_city, read["start_city"])
-    end_city = pick("end city", form.end_city, read["end_city"])
+    first_day = pick("first_day", form.first_day, to_date(read["first_day"]))
+    last_day = pick("last_day", form.last_day, to_date(read["last_day"]))
+    start_city = pick("start_city", form.start_city, read["start_city"])
+    end_city = pick("end_city", form.end_city, read["end_city"])
 
     chosen = {}
     for setting in fields(Settings):
         from_text = read.get(setting.name)
         if setting.name == "earliest_train":
             from_text = to_minutes(from_text)
-        show = (lambda m: f"{m // 60:02}:{m % 60:02}") if setting.name == "earliest_train" else str
-        value = pick(setting.name.replace("_", " "), form.settings.get(setting.name), from_text, show)
+        value = pick(setting.name, form.settings.get(setting.name), from_text)
         low_high = SETTING_RANGES.get(setting.name)
         if value is not None and low_high and not low_high[0] <= value <= low_high[1]:
-            notes.append(f"{setting.name.replace('_', ' ')} of {show(value)} is not sensible; the default is used.")
+            notes.append(OUT_OF_RANGE[setting.name](*low_high, setting.default))
             value = None
         if value is not None:
             chosen[setting.name] = value
@@ -136,14 +173,15 @@ def merge(form: Form, read: dict) -> Understood:
     not_covered = list(read["not_covered"])
 
     if first_day is None or last_day is None:
-        notes.append(f"Please choose your dates, between {FIRST_DAY:%d} and {LAST_DAY:%d %B}.")
+        notes.append(f"Please pick your dates on the calendar: any days from {FIRST_DAY:%-d} to {LAST_DAY:%-d %B} "
+                     "work beautifully.")
         return Understood(None, notes, not_covered)
     if not FIRST_DAY <= first_day <= last_day <= LAST_DAY:
         notes.append(OUTSIDE_DATES)
         return Understood(None, notes, not_covered)
     for city in (start_city, end_city):
         if city is not None and city not in STATIONS:
-            notes.append(f"{city} is not one of our cities; it is left out.")
+            notes.append(f"{city} isn't on our map yet, so we've planned without it.")
     start_city = start_city if start_city in STATIONS else None
     end_city = end_city if end_city in STATIONS else None
     return Understood(TripRequest(first_day, last_day, settings, wishes, tags, start_city, end_city),

@@ -90,7 +90,7 @@ def test_a_request_that_breaks_the_rules_is_refused_before_planning(session, mon
     pretend_planner(monkeypatch)  # no answers: any planner call would fail
     response = client.post("/api/plan", json={**CONFIRMED, "settings": {"max_markets_per_day": 9}})
     assert response.status_code == 422
-    assert "not sensible" in response.json()["detail"][0]
+    assert response.json()["detail"][0] == "We can plan 1 to 4 markets a day, so we've kept it at 2."
     assert session.scalars(select(Trip)).all() == []
 
 
