@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Nunito } from "next/font/google";
 import Footer from "@/components/Footer";
+import Header from "@/components/Header";
 import NightSky from "@/components/NightSky";
 import "./globals.css";
 
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <div aria-hidden className="winter-night fixed inset-0 z-0" />
         <NightSky />
+        <Header />
         <div className="relative z-10 flex flex-1 flex-col">{children}</div>
         <Footer />
       </body>
