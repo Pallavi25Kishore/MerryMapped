@@ -21,7 +21,9 @@ empty list).
   - `max_markets_per_day`: "relaxed" or "slow" could be 1.
   - `day_trips`: true when the traveller asks for day trips (going somewhere and coming back
     the same day); false when they say they don't want them.
-- `tags`: tags from the list that the wishes clearly match.
+- `tags`: tags from the list that the wishes clearly match. Match the tag's meaning, not a
+  shared word: "fairytale pretty" can be old-town, but "medieval food" is not the medieval
+  tag, which means a medieval town, old crafts or period music.
 - `wishes`: every other wish, short, in the traveller's words ("not too touristy", "mulled
   wine", "Aachen as a day trip").
 - `not_covered`: anything asked for that MerryMapped cannot do: a city or market not listed,

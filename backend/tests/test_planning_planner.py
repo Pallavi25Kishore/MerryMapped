@@ -22,7 +22,7 @@ def test_trip_text_spells_out_the_request():
         "Settings: earliest train 08:00; at least 2 h 00 min at each market; at most 6 h 00 min of travel a day; "
         "up to 2 markets a day; day trips allowed\n"
         "Wishes: quiet markets\n"
-        "Tags from the wishes: medieval (a medieval theme: costumes, old crafts, period music)")
+        "Tags from the wishes: medieval (a medieval town, old crafts or period music)")
 
 
 def test_market_text_lists_hours_for_each_trip_day():
