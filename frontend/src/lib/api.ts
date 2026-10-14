@@ -5,10 +5,13 @@
 
 export type SettingRange = { default: number | boolean; low?: number; high?: number };
 
+export type Place = { city: string; country: string; lat: number; lon: number; market_city: boolean };
+
 export type Options = {
   first_day: string; // "2026-12-15"
   last_day: string;
   cities: string[];
+  places: Place[]; // every city, with its country and position, for the map
   settings: Record<string, SettingRange>; // times in minutes after midnight, durations in minutes
   train_data_credits: { credit: string; licence: string }[];
 };

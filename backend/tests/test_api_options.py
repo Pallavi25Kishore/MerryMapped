@@ -20,3 +20,10 @@ def test_options_carry_each_timetable_credit_once():
     assert {"credit": "DELFI e.V. via gtfs.de", "licence": "CC BY 4.0"} in credits
     assert {"credit": "SNCF Voyageurs", "licence": "ODbL"} in credits
     assert len(credits) == 4  # the two German feeds share one credit
+
+
+def test_options_place_every_city_with_its_country_and_position():
+    places = client.get("/api/options").json()["places"]
+    assert [p["city"] for p in places] == client.get("/api/options").json()["cities"]
+    assert {"city": "Colmar", "country": "France", "lat": 48.074, "lon": 7.348, "market_city": True} in places
+    assert next(p for p in places if p["city"] == "Brussels")["market_city"] is False  # a train hub, no market

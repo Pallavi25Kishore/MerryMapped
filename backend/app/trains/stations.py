@@ -31,3 +31,12 @@ POSITIONS = {
     "Brussels": (50.836, 4.336),
     "Brugge": (51.197, 3.217),
 }
+
+# The country each city is in, for showing the cities grouped on the website.
+COUNTRIES = {
+    "Köln": "Germany", "Aachen": "Germany", "Nürnberg": "Germany", "Rothenburg ob der Tauber": "Germany",
+    "Dresden": "Germany", "Strasbourg": "France", "Colmar": "France", "Brussels": "Belgium", "Brugge": "Belgium",
+}
+
+# Cities that are train hubs only, with no market of their own.
+HUBS = {"Brussels"}

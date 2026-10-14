@@ -21,7 +21,7 @@ from app.planning.wishes import review_wishes
 from app.rules.engine import site_of
 from app.rules.site_review import load_review
 from app.trains.feeds import FEEDS
-from app.trains.stations import STATIONS
+from app.trains.stations import COUNTRIES, HUBS, POSITIONS, STATIONS
 
 app = FastAPI(title="MerryMapped")
 
@@ -65,9 +65,10 @@ def health():
 
 @api.get("/options")
 def options():
-    """What the trip form needs: the dates a trip can use, our cities, and each setting's default
-    and allowed range (times in minutes after midnight, durations in minutes); and the credit each
-    timetable's licence asks us to show, for the website's footer."""
+    """What the trip form needs: the dates a trip can use, our cities (with each one's country and
+    position, for the map), and each setting's default and allowed range (times in minutes after
+    midnight, durations in minutes); and the credit each timetable's licence asks us to show, for
+    the website's footer."""
     settings = {}
     for setting in fields(Settings):
         settings[setting.name] = {"default": setting.default}
@@ -76,6 +77,8 @@ def options():
     credits = list(dict.fromkeys((feed.credit, feed.licence) for feed in FEEDS))
     return {"first_day": FIRST_DAY.isoformat(), "last_day": LAST_DAY.isoformat(),
             "cities": list(STATIONS), "settings": settings,
+            "places": [{"city": city, "country": COUNTRIES[city], "lat": POSITIONS[city][0], "lon": POSITIONS[city][1],
+                        "market_city": city not in HUBS} for city in STATIONS],
             "train_data_credits": [{"credit": credit, "licence": licence} for credit, licence in credits]}
 
 
