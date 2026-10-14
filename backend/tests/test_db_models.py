@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 from sqlalchemy import select
@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.connection import make_engine
-from app.db.models import Fact, Market, TrainLink, create_tables
+from app.db.models import Fact, Market, TrainLink, Trip, create_tables
 
 WEBSITE = "https://koeln-market.example/de/"
 
@@ -88,3 +88,11 @@ def test_one_train_link_per_pair_and_day(session):
     session.add_all([train_link(), train_link()])
     with pytest.raises(IntegrityError):
         session.commit()
+
+
+def test_trip_is_saved_and_read_back(session):
+    session.add(Trip(id="pretend-id", created_at=datetime(2026, 10, 13, 12, 0),
+                     request={"first_day": "2026-12-15"}, itinerary={"days": []}))
+    session.commit()
+    trip = session.get(Trip, "pretend-id")
+    assert (trip.request, trip.itinerary) == ({"first_day": "2026-12-15"}, {"days": []})

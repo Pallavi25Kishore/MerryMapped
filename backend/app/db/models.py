@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy import JSON, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -53,6 +53,17 @@ class TrainLink(Base):
     source: Mapped[str]  # "timetable", "estimate" or "entered by hand"
     based_on_day: Mapped[date | None]  # for an estimate: the same weekday it was worked out from
     checked_on: Mapped[date]
+
+
+class Trip(Base):
+    """A planned trip: what was asked and the itinerary shown. MerryMapped has one user, and the
+    whole API is behind an access code, so a trip needs no key of its own."""
+    __tablename__ = "trips"
+
+    id: Mapped[str] = mapped_column(primary_key=True)  # random, so trips cannot be guessed or counted
+    created_at: Mapped[datetime]
+    request: Mapped[dict] = mapped_column(JSON)  # the confirmed request
+    itinerary: Mapped[dict] = mapped_column(JSON)  # the answer the website shows
 
 
 def create_tables(engine) -> None:
