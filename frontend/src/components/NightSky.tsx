@@ -2,19 +2,16 @@
 
 import { useEffect, useRef } from "react";
 
-// The night sky behind every page: falling snow, twinkling gold fairy dust, and a trail of
-// sparkles that follows the pointer. Drawn on one canvas; with "reduce motion" on, it stands still.
+// The night sky behind every page: falling snow and twinkling gold fairy lights. Drawn on one canvas;
+// with "reduce motion" on, it stands still. (The pointer trail is drawn on top, in Magic.)
 
 type Flake = { x: number; y: number; size: number; speed: number; sway: number; phase: number };
 type Dust = { x: number; y: number; size: number; drift: number; rise: number; phase: number; twinkle: number };
-type Spark = { x: number; y: number; vx: number; vy: number; size: number; life: number };
 
 const FLAKES_PER_PIXEL = 1 / 14000; // about 150 on a large screen; the picture has snow of its own
 const DUST_PER_PIXEL = 1 / 68000; // fairy lights: about 30 on a large screen
 const FAIRY_SIZE = 9; // average radius of a fairy light's glow, in pixels
 const FAIRY_BRIGHTNESS = 0.8; // the brightest a fairy light gets, at the top of its twinkle
-const SPARK_LIFE = 0.7; // seconds a pointer sparkle lasts
-const SPARK_SPREAD = 16; // how fast sparkles drift away from the pointer (pixels a second)
 
 // The background picture's size, and the top edge of its snowy hills (x, y in its pixels,
 // measured from public/backgrounds/winter-night.jpg): fairy lights stay in the sky above it.
@@ -66,7 +63,6 @@ export default function NightSky() {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
     const snow = sprite("rgba(247, 244, 236, 1)", 0.35);
-    const gold = sprite("rgba(244, 195, 90, 1)", 0.2);
     const fairy = glow();
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let width = 0, height = 0, flakes: Flake[] = [], dust: Dust[] = [];
@@ -75,7 +71,6 @@ export default function NightSky() {
     // The lowest a fairy light may be at screen x: just above the hills (or the window's bottom).
     const skyBottom = (x: number) =>
       Math.min(top + hillTop((x - left) / scale) * scale, height) - ABOVE_HILLS;
-    const sparks: Spark[] = [];
 
     const newFlake = (top: boolean): Flake => {
       const size = 1.5 + Math.random() ** 2 * 5; // mostly small, a few big ones close by
@@ -116,11 +111,6 @@ export default function NightSky() {
         ctx.drawImage(fairy, d.x - d.size, d.y - d.size, d.size * 2, d.size * 2);
       }
       ctx.globalCompositeOperation = "source-over";
-      for (const s of sparks) {
-        ctx.globalAlpha = s.life / SPARK_LIFE;
-        const size = s.size * (0.5 + s.life / SPARK_LIFE);
-        ctx.drawImage(gold, s.x - size, s.y - size, size * 2, size * 2);
-      }
       ctx.globalAlpha = 1;
     };
 
@@ -138,24 +128,8 @@ export default function NightSky() {
         // Out of the top, or drifted over a hill: start again just above the hills.
         if (d.y < -10 || d.y > skyBottom(d.x)) Object.assign(d, newDust(true));
       }
-      for (let i = sparks.length - 1; i >= 0; i--) {
-        const s = sparks[i];
-        s.life -= dt;
-        s.x += s.vx * dt;
-        s.y += s.vy * dt;
-        s.vy += 12 * dt; // dust slowly settles
-        if (s.life <= 0) sparks.splice(i, 1);
-      }
       draw(now / 1000);
       frame = requestAnimationFrame(tick);
-    };
-
-    const sprinkle = (event: PointerEvent) => {
-      for (let i = 0; i < 2; i++) {
-        sparks.push({ x: event.clientX, y: event.clientY, vx: (Math.random() - 0.5) * SPARK_SPREAD,
-                      vy: (Math.random() - 0.5) * SPARK_SPREAD, size: 1.5 + Math.random() * 3, life: SPARK_LIFE });
-      }
-      if (sparks.length > 200) sparks.splice(0, sparks.length - 200);
     };
 
     resize();
@@ -163,13 +137,11 @@ export default function NightSky() {
     if (still) {
       draw(0); // reduce motion: one quiet, still picture
     } else {
-      window.addEventListener("pointermove", sprinkle);
       frame = requestAnimationFrame(tick);
     }
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", resize);
-      window.removeEventListener("pointermove", sprinkle);
     };
   }, []);
 
