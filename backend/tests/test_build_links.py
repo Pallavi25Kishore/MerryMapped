@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.db.connection import make_engine
 from app.db.models import TrainLink, create_tables
 from app.trains import build_links
-from app.trains.build_links import day_to_read, link_row, read_day, replace_links
+from app.trains.build_links import city_pairs, day_to_read, link_row, read_day, replace_links
 from app.trains.connections import Journey, Leg
 from app.trains.feeds import Feed
 
@@ -97,19 +97,50 @@ def test_read_day_uses_real_trains_where_it_can_and_lends_the_rest(tmp_path, mon
     assert {(run.feed, run.day) for run in trains.runs} == {("real", date(2026, 12, 19)), ("short", date(2026, 12, 19))}
 
 
-def test_replace_links_keeps_hand_entered_rows():
+def saved(session):
+    return sorted((r.from_city, r.to_city, r.trips_per_day, r.source) for r in session.scalars(select(TrainLink)))
+
+
+def test_replace_links_touches_only_the_pairs_it_writes():
+    engine = make_engine("sqlite://")
+    create_tables(engine)
+    day, other_day = date(2026, 12, 19), date(2026, 12, 20)
+    with Session(engine) as session:
+        session.add_all([link_row("Köln", "Aachen", day, [], {}, TODAY),
+                         link_row("Brussels", "Brugge", day, [], {}, TODAY),
+                         link_row("Brussels", "Brugge", other_day, [], {}, TODAY)])
+        session.commit()
+        new = link_row("Brussels", "Brugge", day, [Journey((leg("t", 480, 540),))], {}, TODAY)
+        replace_links(session, day, [new])
+        session.commit()
+        assert saved(session) == [("Brussels", "Brugge", 0, "timetable"),  # the other day: untouched
+                                  ("Brussels", "Brugge", 1, "timetable"),  # replaced
+                                  ("Köln", "Aachen", 0, "timetable")]  # another pair: untouched
+
+
+def test_replace_links_never_replaces_hand_entered_rows():
     engine = make_engine("sqlite://")
     create_tables(engine)
     day = date(2026, 12, 19)
     hand = link_row("Brussels", "Brugge", day, [], {}, TODAY)
     hand.source = "entered by hand"
-    old = link_row("Köln", "Aachen", day, [], {}, TODAY)
     with Session(engine) as session:
-        session.add_all([hand, old])
+        session.add(hand)
         session.commit()
-        new = link_row("Köln", "Aachen", day, [Journey((leg("t", 480, 520),))], {}, TODAY)
-        replace_links(session, day, [new])
+        computed = [link_row("Brussels", "Brugge", day, [Journey((leg("t", 480, 540),))], {}, TODAY),
+                    link_row("Köln", "Aachen", day, [], {}, TODAY)]
+        replace_links(session, day, computed)
         session.commit()
-        rows = session.scalars(select(TrainLink).order_by(TrainLink.from_city)).all()
-        assert [(r.from_city, r.trips_per_day) for r in rows] == [("Brussels", 0), ("Köln", 1)]
-        assert rows[0].source == "entered by hand"
+        assert saved(session) == [("Brussels", "Brugge", 0, "entered by hand"), ("Köln", "Aachen", 0, "timetable")]
+
+
+def test_city_pairs_for_one_city():
+    pairs = city_pairs("Brugge")
+    assert len(pairs) == 16
+    assert all("Brugge" in pair for pair in pairs)
+    assert len(city_pairs()) == 72
+
+
+def test_city_pairs_refuses_an_unknown_city():
+    with pytest.raises(SystemExit):
+        city_pairs("Bruges")

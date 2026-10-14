@@ -1,9 +1,10 @@
+import argparse
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 from itertools import permutations
 from pathlib import Path
 
-from sqlalchemy import delete
+from sqlalchemy import delete, select, tuple_
 from sqlalchemy.orm import Session
 
 from app.db.connection import make_engine
@@ -93,15 +94,33 @@ def link_row(from_city: str, to_city: str, day: date, found: list[Journey],
 
 
 def replace_links(session: Session, day: date, rows: list[TrainLink]) -> None:
-    """Replace the day's rows worked out from timetables. Hand-entered rows are kept.
-    The caller commits."""
-    session.execute(delete(TrainLink).where(TrainLink.day == day,
-                                            TrainLink.source != "entered by hand"),
-                    execution_options={"synchronize_session": "fetch"})
+    """Replace the day's rows for exactly these pairs; rows for other pairs are left alone.
+    Hand-entered rows are never replaced: a pair that has one keeps it. The caller commits."""
+    by_hand = {(from_city, to_city) for from_city, to_city in session.execute(
+        select(TrainLink.from_city, TrainLink.to_city)
+        .where(TrainLink.day == day, TrainLink.source == "entered by hand"))}
+    rows = [row for row in rows if (row.from_city, row.to_city) not in by_hand]
+    pairs = [(row.from_city, row.to_city) for row in rows]
+    if not pairs:
+        return
+    session.execute(
+        delete(TrainLink).where(TrainLink.day == day,
+                                tuple_(TrainLink.from_city, TrainLink.to_city).in_(pairs)),
+        execution_options={"synchronize_session": "fetch"})
     session.add_all(rows)
 
 
-def main() -> None:
+def city_pairs(only: str | None = None) -> list[tuple[str, str]]:
+    """Every (from, to) pair of our cities, or only the pairs to or from one city."""
+    if only is not None and only not in STATIONS:
+        raise SystemExit(f"{only!r} is not in stations.py: use one of {', '.join(STATIONS)}.")
+    return [(a, b) for a, b in permutations(STATIONS, 2) if only is None or only in (a, b)]
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="Work out train journeys for 15-31 December and save them.")
+    parser.add_argument("--only", metavar="CITY", help="only the pairs to or from this city, e.g. Brugge")
+    pairs = city_pairs(parser.parse_args(argv).only)
     for feed in FEEDS:
         first, last = coverage(feed.name)
         print(f"{feed.name} covers {first} to {last}.")
@@ -113,7 +132,7 @@ def main() -> None:
         rows = [link_row(from_city, to_city, day,
                          journeys(trains.runs, set(STATIONS[from_city]), set(STATIONS[to_city])),
                          trains.lent_from, today)
-                for from_city, to_city in permutations(STATIONS, 2)]
+                for from_city, to_city in pairs]
         # Read the rows before saving: once committed, their values are expired.
         estimates = sum(row.source == "estimate" for row in rows)
         none = [f"{row.from_city} -> {row.to_city}" for row in rows if row.trips_per_day == 0]
