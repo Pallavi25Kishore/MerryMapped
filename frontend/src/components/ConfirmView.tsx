@@ -6,8 +6,9 @@ import TicketButton from "@/components/TicketButton";
 import type { Place, Settings, TripForm, Understood } from "@/lib/api";
 
 // The confirm screen, like a Christmas card: a headline about the trip, then three cards (where, with
-// a small map; the pace, marking what was asked for in the wishes; every wish as a tile), a little
-// note with the backend's notes and what MerryMapped can't include, and Back (to the form) or Plan my trip.
+// a small map; the pace, marking what was asked for in the wishes; every wish, in the traveller's own
+// words, as a tile), a little note with the backend's notes and what MerryMapped can't include, and
+// Back (to the form) or Plan my trip.
 
 const NUMBERS = ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
                  "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen"];
@@ -28,11 +29,6 @@ const PACE: { key: keyof Settings; say: (value: never) => string }[] = [
   { key: "max_markets_per_day", say: (n: number) => `Up to ${n} ${n === 1 ? "market" : "markets"} a day` },
   { key: "day_trips", say: (on: boolean) => (on ? "Day trips welcome" : "No day trips") },
 ];
-
-function tagLabel(tag: string): string {
-  const words = tag.replace(/-/g, " ");
-  return words[0].toUpperCase() + words.slice(1);
-}
 
 // Thin gold line icons, drawn in code so they stay crisp and classy.
 const ICONS = {
@@ -61,7 +57,7 @@ type Props = {
   defaults: Settings;
   places: Place[];
   onEdit: () => void;
-  onPlan?: () => void;
+  onPlan?: (event: React.MouseEvent<HTMLButtonElement>) => void;
 };
 
 export default function ConfirmView({ understood, form, defaults, places, onEdit, onPlan }: Props) {
@@ -72,7 +68,7 @@ export default function ConfirmView({ understood, form, defaults, places, onEdit
                                               : `, from ${request.start_city} to ${request.end_city}`
     : request?.start_city ? `, starting in ${request.start_city}`
     : request?.end_city ? `, ending in ${request.end_city}` : "";
-  const tiles = request ? [...request.tags.map(tagLabel), ...request.wishes] : [];
+  const tiles = request?.wishes ?? []; // only the traveller's own words (tags stay in the background)
 
   return (
     <div className="mt-2 text-center">

@@ -24,8 +24,9 @@ empty list).
 - `tags`: tags from the list that the wishes clearly match. Match the tag's meaning, not a
   shared word: "fairytale pretty" can be old-town, but "medieval towns" is not the medieval
   tag, which means a medieval theme (costumes, old crafts, period music).
-- `wishes`: every other wish, short, in the traveller's words ("not too touristy", "mulled
-  wine", "Aachen as a day trip").
+- `wishes`: every wish, short, in the traveller's own words ("fairytale vibe", "not too
+  touristy", "mulled wine", "Aachen as a day trip"), including wishes that also matched a tag.
+  The traveller sees this list, so never replace their words with a tag name.
 - `not_covered`: anything asked for that MerryMapped cannot do: a city or market not listed,
   flights, hotels, buses or cars, dates outside 15-31 December.
 
