@@ -15,6 +15,8 @@ class Stop:
     depart: int
     can_board: bool
     can_alight: bool
+    lat: float  # the stop's map position, to tell apart places with the same name
+    lon: float
 
 
 @dataclass(frozen=True)
@@ -68,7 +70,8 @@ def services_by_day(folder: Path, days: set[date]) -> dict[str, set[date]]:
 def read_feed(folder: Path, days: set[date], stations: set[str] | None = None) -> list[Run]:
     """Every train run on the given days that stops at one of the given stations
     (or every train run, if no stations are given)."""
-    names = {row["stop_id"]: row["stop_name"] for row in rows(folder / "stops.txt")}
+    places = {row["stop_id"]: (row["stop_name"], float(row["stop_lat"]), float(row["stop_lon"]))
+              for row in rows(folder / "stops.txt")}
     train_routes = {row["route_id"] for row in rows(folder / "routes.txt") if is_train(row["route_type"])}
     running = services_by_day(folder, days)
     trip_days = {}
@@ -80,12 +83,15 @@ def read_feed(folder: Path, days: set[date], stations: set[str] | None = None) -
     for row in rows(folder / "stop_times.txt"):
         if row["trip_id"] not in trip_days:
             continue
+        name, lat, lon = places[row["stop_id"]]
         stop = Stop(
-            station=names[row["stop_id"]],
+            station=name,
             arrive=minutes(row["arrival_time"]),
             depart=minutes(row["departure_time"]),
             can_board=row.get("pickup_type") != NO,
             can_alight=row.get("drop_off_type") != NO,
+            lat=lat,
+            lon=lon,
         )
         stop_lists[row["trip_id"]].append((int(row["stop_sequence"]), stop))
 

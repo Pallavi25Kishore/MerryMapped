@@ -1,10 +1,10 @@
 # The station we use for each market city (the city as written in the markets
 # table), with every spelling the feeds use for it. Each feed names stations
 # its own way, e.g. "Bruxelles-Midi" (Eurostar) and "Bruxelles Midi" (gtfs.de).
+# Accents and country tags such as "(DE)" are ignored when names are compared,
+# so "Köln Hbf (DE)" (SNCB) matches "Köln Hbf".
 #
-# Brugge is not here: its trains are SNCB's, so Brussels <-> Brugge is entered
-# by hand. Brussels is here only as the station where that hand-entered leg
-# joins the trains in the feeds.
+# Brussels is not a market city: it is where most trips to Brugge change trains.
 STATIONS = {
     "Köln": ["Köln Hbf"],
     "Aachen": ["Aachen Hbf"],
@@ -14,4 +14,20 @@ STATIONS = {
     "Strasbourg": ["Strasbourg"],
     "Colmar": ["Colmar"],
     "Brussels": ["Bruxelles-Midi", "Bruxelles Midi"],
+    "Brugge": ["Brugge", "Bruges"],  # SNCB's feed uses French names
+}
+
+# Where each station is (latitude, longitude). Some names are used for more than
+# one place, e.g. "Bruges" is also a town near Bordeaux in SNCF's feed: only the
+# station near this position counts as the city's station.
+POSITIONS = {
+    "Köln": (50.943, 6.959),
+    "Aachen": (50.768, 6.091),
+    "Nürnberg": (49.446, 11.083),
+    "Rothenburg ob der Tauber": (49.377, 10.191),
+    "Dresden": (51.040, 13.732),
+    "Strasbourg": (48.585, 7.734),
+    "Colmar": (48.074, 7.348),
+    "Brussels": (50.836, 4.336),
+    "Brugge": (51.197, 3.217),
 }

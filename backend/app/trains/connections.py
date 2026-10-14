@@ -1,3 +1,5 @@
+import re
+import unicodedata
 from bisect import bisect_left, bisect_right
 from collections import defaultdict
 from dataclasses import dataclass
@@ -21,10 +23,12 @@ class Leg:
 def ride(run: Run, from_names: set[str], to_names: set[str]) -> Leg | None:
     """The leg on this run from a from-station (boarding allowed) to a later to-station
     (getting off allowed), or None if the run does not make that trip."""
+    starts = {simplify(name) for name in from_names}
+    ends = {simplify(name) for name in to_names}
     for i, start in enumerate(run.stops):
-        if start.station in from_names and start.can_board:
+        if simplify(start.station) in starts and start.can_board:
             for end in run.stops[i + 1:]:
-                if end.station in to_names and end.can_alight:
+                if simplify(end.station) in ends and end.can_alight:
                     return Leg(run.feed, run.trip_id, run.day, start.station, end.station,
                                start.depart, end.arrive)
     return None
@@ -71,9 +75,15 @@ class Journey:
         return len(self.legs) - 1
 
 
+COUNTRY_TAG = re.compile(r"\s*\((?:DE|FR|BE|NL|LU|CH|AT|IT|GB|UK)\)\s*$")
+
+
 def simplify(station: str) -> str:
-    """A station name for matching across feeds: "Bruxelles-Midi" and "Bruxelles Midi" match."""
-    return "".join(ch for ch in station.lower() if ch not in " -().,")
+    """A station name for matching across feeds: "Bruxelles-Midi" matches "Bruxelles Midi",
+    "Köln Hbf (DE)" matches "Köln Hbf", and "Liège" matches "Liege"."""
+    name = COUNTRY_TAG.sub("", station)
+    name = "".join(ch for ch in unicodedata.normalize("NFKD", name) if not unicodedata.combining(ch))
+    return "".join(ch for ch in name.lower() if ch not in " -().,")
 
 
 def legs_onward(run: Run, i: int, skip: set[str]) -> list[Leg]:

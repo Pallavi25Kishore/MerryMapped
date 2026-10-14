@@ -5,7 +5,8 @@ from app.trains.reader import read_feed
 # A tiny feed: one train A -> B -> C, one bus A -> C, and one train that never
 # stops at a station we ask for.
 FEED = {
-    "stops.txt": "stop_id,stop_name\na,Alpha\nb,Beta\nc,Gamma\nx,Xi\ny,Ypsilon\n",
+    "stops.txt": ("stop_id,stop_name,stop_lat,stop_lon\na,Alpha,50.1,5.1\nb,Beta,50.2,5.2\n"
+                  "c,Gamma,50.3,5.3\nx,Xi,50.4,5.4\ny,Ypsilon,50.5,5.5\n"),
     "routes.txt": "route_id,route_type\ntrain,2\nfast,101\nbus,3\n",
     "calendar.txt": (
         "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\n"

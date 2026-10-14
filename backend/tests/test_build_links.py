@@ -67,7 +67,7 @@ def test_no_journey_is_an_estimate_when_trains_were_lent():
 def write_feed(folder, start, end):
     folder.mkdir(parents=True)
     files = {
-        "stops.txt": "stop_id,stop_name\na,A\nb,B\n",
+        "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\na,A,50.1,5.1\nb,B,50.2,5.2\n",
         "routes.txt": "route_id,route_type\nr,2\n",
         "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\n"
                          f"s,1,1,1,1,1,1,1,{start},{end}\n"),

@@ -1,13 +1,13 @@
 from datetime import date
 
-from app.trains.connections import Journey, Leg, direct_trains, journeys, keep_best
+from app.trains.connections import Journey, Leg, direct_trains, journeys, keep_best, simplify
 from app.trains.reader import Run, Stop
 
 DAY = date(2026, 12, 19)
 
 
 def stop(station, time, board=True, alight=True):
-    return Stop(station, time, time, board, alight)
+    return Stop(station, time, time, board, alight, 50.0, 5.0)
 
 
 def run(trip_id, *stops, feed="feed_a", day=DAY):
@@ -125,3 +125,14 @@ def test_keep_best_drops_fewer_changes_when_more_than_30_minutes_slower():
     direct = Journey((leg("direct", 480, 631),))
     changing = Journey((leg("c1", 480, 540), leg("c2", 550, 600)))
     assert keep_best([direct, changing]) == [changing]
+
+
+def test_names_match_without_accents_or_country_tags():
+    assert simplify("Köln Hbf (DE)") == simplify("Köln Hbf") == simplify("Koln Hbf")
+    assert simplify("Liège-Guillemins") == simplify("Liege-Guillemins")
+    assert simplify("Bruxelles-Midi") == simplify("Bruxelles Midi")
+
+
+def test_a_country_tag_spelling_counts_as_our_station():
+    runs = [run("t", stop("Bruxelles-Midi", 480), stop("Köln Hbf (DE)", 590))]
+    assert len(direct_trains(runs, {"Bruxelles-Midi"}, {"Köln Hbf"})) == 1
