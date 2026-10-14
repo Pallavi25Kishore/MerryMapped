@@ -1,4 +1,6 @@
-// A simple title screen for now, to see the look; the trip form comes here later.
+import TicketButton from "@/components/TicketButton";
+
+// The home page: the title and tagline on the night sky, and the way into the planner.
 export default function Home() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 px-4 pb-[20vh] text-center">
@@ -9,6 +11,7 @@ export default function Home() {
       <p className="max-w-md text-lg text-snow/90">
         Your Christmas markets trip, planned reliably around accurate opening hours and train schedules.
       </p>
+      <TicketButton className="mt-4">Start planning</TicketButton>
     </main>
   );
 }
