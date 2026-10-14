@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import PlanForm from "@/components/PlanForm";
 import TicketButton from "@/components/TicketButton";
 import { castMagic } from "@/lib/magic";
 import { play } from "@/lib/sound";
@@ -18,12 +19,14 @@ const TIP_MS = 900; // how long Start planning takes to tip forward and vanish
 export default function HomeFlow() {
   const [planning, setPlanning] = useState(false);
   const [tipped, setTipped] = useState(false); // Start planning has tipped forward, edge-on
+  const [opened, setOpened] = useState(false); // the form stays (with what was entered) once opened
   const panelHeading = useRef<HTMLHeadingElement>(null);
 
   const start = (event: React.MouseEvent<HTMLButtonElement>) => {
     const button = event.currentTarget;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setPlanning(true);
+      setOpened(true);
       return;
     }
     // Everything starts at the click: the tip, the sparkles, the bells and the planner opening.
@@ -31,6 +34,7 @@ export default function HomeFlow() {
     play("magic");
     setTipped(true); // a quarter turn, top over bottom, until it is edge-on and gone
     setPlanning(true);
+    setOpened(true);
   };
 
   const back = () => {
@@ -72,13 +76,13 @@ export default function HomeFlow() {
 
       {/* The trip form's panel: rises in from below. */}
       <section aria-label="Plan your trip" inert={!planning}
-               className={`absolute inset-x-4 top-[18%] mx-auto max-w-2xl border border-snow/15 bg-night/55 p-8
+               className={`absolute inset-x-4 top-[18%] mx-auto max-h-[78vh] max-w-2xl overflow-y-auto border border-snow/15 bg-night/55 p-8
                            shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-10 ${GLIDE}
                            ${planning ? "translate-y-0 opacity-100 delay-150" : "pointer-events-none translate-y-16 opacity-0"}`}>
         <h2 ref={panelHeading} tabIndex={-1} className="font-display text-3xl font-semibold outline-none">
           Plan your trip
         </h2>
-        <p className="mt-4 text-snow/80">Your trip form comes here.</p>
+        {opened && <PlanForm />}
         <TicketButton kind="quiet" className="mt-8" onClick={back}>Back</TicketButton>
       </section>
     </main>
