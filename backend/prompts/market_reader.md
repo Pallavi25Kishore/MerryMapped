@@ -46,7 +46,7 @@ fact is fine and a wrong fact is not.
 | `riverside`       | it is on a river, lake or harbour                                  |
 | `park-or-forest`  | it is in a park, garden or forest                                  |
 | `underground`     | it is in cellars, caves or vaults                                  |
-| `medieval`        | a medieval town, old crafts or period music                        |
+| `medieval`        | a medieval theme: costumes, old crafts, period music               |
 | `light-show`      | illuminations, light installations or a light canopy               |
 | `traditional`     | it describes itself as traditional or historic                     |
 | `modern-design`   | it is modern, design-led or contemporary                           |
