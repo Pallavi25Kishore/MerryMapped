@@ -28,13 +28,13 @@ SETTING_RANGES = {
 @dataclass(frozen=True)
 class Form:
     """What the traveller filled in on the website (each field optional) and what they typed.
-    settings holds only the settings they changed, by Settings field name (times in minutes)."""
+    settings holds only the settings they changed, by Settings field name (times in minutes).
+    There is no tag picker: tags come only from what they typed."""
     text: str = ""
     first_day: date | None = None
     last_day: date | None = None
     start_city: str | None = None
     end_city: str | None = None
-    tags: tuple[str, ...] = ()
     settings: dict = field(default_factory=dict)
 
 
@@ -131,7 +131,7 @@ def merge(form: Form, read: dict) -> Understood:
             chosen[setting.name] = value
     settings = Settings(**chosen)
 
-    tags = tuple(tag for tag in (form.tags or tuple(read["tags"])) if tag in TAGS)
+    tags = tuple(tag for tag in read["tags"] if tag in TAGS)
     wishes = "; ".join(read["wishes"])
     not_covered = list(read["not_covered"])
 
