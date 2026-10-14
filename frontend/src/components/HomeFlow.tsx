@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { HOME_EVENT } from "@/components/Header";
 import PlanForm from "@/components/PlanForm";
 import TicketButton from "@/components/TicketButton";
 import { castMagic } from "@/lib/magic";
@@ -41,6 +42,16 @@ export default function HomeFlow() {
     setPlanning(false);
     setTipped(false); // Start planning tips back up into view
   };
+
+  // Home in the header returns to the welcome view, like Back.
+  useEffect(() => {
+    const home = () => {
+      setPlanning(false);
+      setTipped(false);
+    };
+    window.addEventListener(HOME_EVENT, home);
+    return () => window.removeEventListener(HOME_EVENT, home);
+  }, []);
 
   useEffect(() => {
     if (!planning) return;

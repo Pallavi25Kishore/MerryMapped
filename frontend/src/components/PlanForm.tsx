@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CityPicker from "@/components/CityPicker";
 import ConfirmView from "@/components/ConfirmView";
 import DatePicker from "@/components/DatePicker";
+import { HOME_EVENT } from "@/components/Header";
 import PaceSettings from "@/components/PaceSettings";
 import TicketButton from "@/components/TicketButton";
+import { castMagic } from "@/lib/magic";
+import { play } from "@/lib/sound";
 import { ApiError, getOptions, setAccessCode, understand, type Options, type Settings, type TripForm,
          type Understood } from "@/lib/api";
 
@@ -31,13 +34,38 @@ export default function PlanForm({ onBack, onPlan }: Props) {
   const [reading, setReading] = useState(false); // waiting for the backend to read the wishes
   const [problem, setProblem] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<Understood | null>(null);
+  const [nudge, setNudge] = useState(false); // the "pick your dates" pop-up is showing
+  const when = useRef<HTMLElement>(null);
+
+  // Home in the header: next time the planner opens, it starts at the form (entries kept).
+  useEffect(() => {
+    const home = () => setConfirm(null);
+    window.addEventListener(HOME_EVENT, home);
+    return () => window.removeEventListener(HOME_EVENT, home);
+  }, []);
+
+  // The pop-up fades away by itself after a few seconds.
+  useEffect(() => {
+    if (!nudge) return;
+    const timer = setTimeout(() => setNudge(false), 4000);
+    return () => clearTimeout(timer);
+  }, [nudge]);
 
   // The confirm screen and the form replace each other: start each at the top of the panel.
   useEffect(() => {
     document.querySelector('section[aria-label="Plan your trip"]')?.scrollTo({ top: 0, behavior: "smooth" });
   }, [confirm]);
 
-  const seeMyPlan = () => {
+  const seeMyPlan = (event: React.MouseEvent<HTMLButtonElement>) => {
+    castMagic(event.currentTarget); // sparkles lift off the button's edges, as on Start planning
+    play("magic");
+    if (!form.first_day || !form.last_day) {
+      // No dates yet: a friendly pop-up, and the calendar comes into view with a brief glow.
+      setNudge(true);
+      when.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    setNudge(false);
     setReading(true);
     setProblem(null);
     understand(form)
@@ -104,10 +132,9 @@ export default function PlanForm({ onBack, onPlan }: Props) {
   const { options } = load;
   if (confirm) {
     const defaults = Object.fromEntries(Object.entries(options.settings).map(([key, range]) => [key, range.default]));
-    return <ConfirmView understood={confirm} form={form} defaults={defaults as Settings}
+    return <ConfirmView understood={confirm} form={form} defaults={defaults as Settings} places={options.places}
                         onEdit={() => setConfirm(null)} onPlan={() => onPlan?.(confirm)} />;
   }
-  const datesChosen = Boolean(form.first_day && form.last_day);
   const text = form.text ?? "";
   return (
     <div className="mt-6 text-left">
@@ -115,10 +142,19 @@ export default function PlanForm({ onBack, onPlan }: Props) {
           column): the text-like parts on the left, the map on the right. */}
       <div className="grid gap-8 xl:grid-cols-2 xl:gap-12">
         <div className="space-y-8">
-          <section>
+          <section ref={when} className={`relative transition duration-500 ${nudge ? "glow-pulse" : ""}`}>
             <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">
               When <span className="normal-case tracking-normal text-frost">· required</span>
             </h3>
+            {/* Shown here, where the eye lands after the scroll, when See my plan is pressed without dates. */}
+            {nudge && (
+              <div role="status" className="rise-in absolute -top-2.5 right-0 z-10 whitespace-nowrap border border-gold/50
+                                             bg-night-deep px-3 py-1.5 text-sm text-snow
+                                             shadow-[0_0_24px_rgb(244_195_90/0.3)]">
+                <span aria-hidden className="mr-2 text-gold">✦</span>
+                Pick your first and last day here to continue
+              </div>
+            )}
             <DatePicker firstAllowed={options.first_day} lastAllowed={options.last_day}
                         firstDay={form.first_day} lastDay={form.last_day}
                         onChange={(first_day, last_day) => setForm((f) => ({ ...f, first_day, last_day }))} />
@@ -156,11 +192,9 @@ export default function PlanForm({ onBack, onPlan }: Props) {
       </section>
 
       <div className="mt-8 flex flex-wrap items-center justify-end gap-3">
-        <span className="mr-2 text-sm text-frost" aria-live="polite">
-          {problem ?? (!datesChosen ? "Choose your dates to continue" : "")}
-        </span>
+        {problem && <span className="mr-2 text-sm text-frost" aria-live="polite">{problem}</span>}
         {back}
-        <TicketButton disabled={!datesChosen || reading} onClick={seeMyPlan}>
+        <TicketButton disabled={reading} onClick={seeMyPlan}>
           {reading ? "Reading your wishes…" : "See my plan"}
         </TicketButton>
       </div>

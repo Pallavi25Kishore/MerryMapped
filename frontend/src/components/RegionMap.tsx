@@ -57,11 +57,13 @@ type Props = {
   places: Place[];
   start?: string;
   end?: string;
-  onPick: (city: string) => void;
+  onPick?: (city: string) => void;
+  compact?: boolean; // a small picture for showing a choice: only the start and end named, nothing to tap
 };
 
-export default function RegionMap({ places, start, end, onPick }: Props) {
+export default function RegionMap({ places, start, end, onPick, compact = false }: Props) {
   const radii = tapRadii(places);
+  if (compact) return <CompactMap places={places} start={start} end={end} />;
   return (
     // The map has spare land above and below our cities: it fills its box, trimming only that spare
     // land (slice), so it can be as tall as the space beside it. On narrow screens it keeps one shape.
@@ -102,8 +104,8 @@ export default function RegionMap({ places, start, end, onPick }: Props) {
         const hub = !place.market_city;
         return (
           <g key={place.city} role="button" tabIndex={0} aria-label={`${place.city}${marks ? `, ${marks}` : ""}`}
-             onClick={() => onPick(place.city)}
-             onKeyDown={(event) => (event.key === "Enter" || event.key === " ") && (event.preventDefault(), onPick(place.city))}
+             onClick={() => onPick?.(place.city)}
+             onKeyDown={(event) => (event.key === "Enter" || event.key === " ") && (event.preventDefault(), onPick?.(place.city))}
              className="group cursor-pointer outline-none">
             <circle cx={x} cy={y} r={radii.get(place.city)} fill="transparent" />
             {(!hub || marks) && (
@@ -120,6 +122,42 @@ export default function RegionMap({ places, start, end, onPick }: Props) {
               {marks && <tspan className="fill-gold text-[18px] not-italic uppercase tracking-widest"> · {marks}</tspan>}
             </text>
           </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+// The small read-only map: our countries, every city as a faint dot, and the start and end glowing
+// gold with their names (large, so they read at a small size).
+function CompactMap({ places, start, end }: { places: Place[]; start?: string; end?: string }) {
+  return (
+    <svg viewBox={`0 0 ${MAP.width} ${MAP.height}`} preserveAspectRatio="xMidYMid slice"
+         className="aspect-[4/3] w-full border border-snow/10 bg-night-deep/60" role="img"
+         aria-label={`Map: ${start ? `start in ${start}` : "start anywhere"}, ${end ? `finish in ${end}` : "finish anywhere"}`}>
+      <defs>
+        <radialGradient id="compact-glow">
+          <stop offset="0" stopColor="rgb(244 195 90)" stopOpacity="0.7" />
+          <stop offset="1" stopColor="rgb(244 195 90)" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      {COUNTRIES.map((country) => (
+        <path key={country.iso + country.name} d={country.path} strokeWidth={2}
+              className={OURS.has(country.name) ? "fill-pine/70 stroke-snow/25" : "fill-night/70 stroke-snow/10"} />
+      ))}
+      {places.map((place) => {
+        const { x, y } = project(place.lat, place.lon);
+        const marks = [place.city === start && "Start", place.city === end && "End"].filter(Boolean).join(" & ");
+        return marks ? (
+          <g key={place.city}>
+            <circle cx={x} cy={y} r={46} fill="url(#compact-glow)" />
+            <circle cx={x} cy={y} r={13} className="fill-gold" />
+            <text x={x} y={y - 30} textAnchor="middle" className="fill-gold text-[44px] font-semibold">
+              {place.city === "Rothenburg ob der Tauber" ? "Rothenburg" : place.city}
+            </text>
+          </g>
+        ) : (
+          <circle key={place.city} cx={x} cy={y} r={8} className="fill-gold/35" />
         );
       })}
     </svg>

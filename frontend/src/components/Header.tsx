@@ -4,6 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import SoundButton from "@/components/SoundButton";
 
+// Clicking Home while already on the home page (for example with the planner open) asks the home
+// page to return to its welcome view.
+export const HOME_EVENT = "merrymapped:home";
+
 // The header on every page, floating on the night sky: the pages and the sound bell, on the right.
 
 const PAGES = [
@@ -21,6 +25,7 @@ export default function Header() {
           const here = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
           return (
             <Link key={href} href={href} aria-current={here ? "page" : undefined}
+                  onClick={() => href === "/" && pathname === "/" && window.dispatchEvent(new Event(HOME_EVENT))}
                   className={`group relative py-1 text-sm tracking-[0.12em] uppercase transition duration-300
                               hover:text-gold hover:[text-shadow:0_0_12px_rgb(244_195_90/0.7)]
                               ${here ? "text-gold" : "text-snow/85"}`}>

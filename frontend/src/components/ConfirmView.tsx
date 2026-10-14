@@ -1,12 +1,16 @@
 "use client";
 
 import { longDate } from "@/components/DatePicker";
+import RegionMap from "@/components/RegionMap";
 import TicketButton from "@/components/TicketButton";
-import type { Settings, TripForm, Understood } from "@/lib/api";
+import type { Place, Settings, TripForm, Understood } from "@/lib/api";
 
-// The confirm screen: "Here's what I understood". The trip in plain words, settings picked up from the
-// typed wishes marked in gold, the wishes and the tags we'll look out for, the backend's notes, and
-// what MerryMapped can't arrange. Edit returns to the form; Plan my trip starts planning.
+// The confirm screen, like a Christmas card: a headline about the trip, then three cards (where, with
+// a small map; the pace, marking what was asked for in the wishes; every wish as a tile), a little
+// note with the backend's notes and what MerryMapped can't include, and Back (to the form) or Plan my trip.
+
+const NUMBERS = ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
+                 "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen"];
 
 function hhmm(minutes: number): string {
   return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
@@ -30,11 +34,23 @@ function tagLabel(tag: string): string {
   return words[0].toUpperCase() + words.slice(1);
 }
 
-function Row({ title, children }: { title: string; children: React.ReactNode }) {
+// Thin gold line icons, drawn in code so they stay crisp and classy.
+const ICONS = {
+  where: <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21zm0-9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />,
+  pace: <path d="M7 15V7a5 5 0 0 1 10 0v8a3 3 0 0 1-3 3h-4a3 3 0 0 1-3-3zm0-4h10M9.5 14.5h.01M14.5 14.5h.01M9 18l-2 3M15 18l2 3" />,
+  wishes: <path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z" />,
+};
+
+function Card({ icon, title, delay, children }: { icon: keyof typeof ICONS; title: string; delay: number; children: React.ReactNode }) {
   return (
-    <div className="grid gap-1 border-b border-snow/10 py-4 sm:grid-cols-[10rem_1fr] sm:gap-6">
-      <div className="text-sm uppercase tracking-[0.25em] text-gold">{title}</div>
-      <div className="text-snow">{children}</div>
+    <div className="rise-in border border-gold/25 bg-night-deep/45 p-5 shadow-[0_0_30px_rgb(0_0_0/0.25)]"
+         style={{ animationDelay: `${delay}ms` }}>
+      <div className="mb-4 flex items-center gap-3">
+        <svg viewBox="0 0 24 24" className="h-6 w-6 text-gold" fill="none" stroke="currentColor" strokeWidth="1.4"
+             strokeLinecap="round" strokeLinejoin="round" aria-hidden>{ICONS[icon]}</svg>
+        <h3 className="text-sm uppercase tracking-[0.25em] text-gold">{title}</h3>
+      </div>
+      {children}
     </div>
   );
 }
@@ -43,75 +59,96 @@ type Props = {
   understood: Understood;
   form: TripForm; // what was chosen on the form, to tell apart settings that came from the typed wishes
   defaults: Settings;
+  places: Place[];
   onEdit: () => void;
   onPlan?: () => void;
 };
 
-export default function ConfirmView({ understood, form, defaults, onEdit, onPlan }: Props) {
+export default function ConfirmView({ understood, form, defaults, places, onEdit, onPlan }: Props) {
   const { request, notes, not_covered } = understood;
+  const days = request ? (Date.parse(request.last_day) - Date.parse(request.first_day)) / 86_400_000 + 1 : 0;
+  const route = request?.start_city && request?.end_city
+    ? request.start_city === request.end_city ? `, starting and ending in ${request.start_city}`
+                                              : `, from ${request.start_city} to ${request.end_city}`
+    : request?.start_city ? `, starting in ${request.start_city}`
+    : request?.end_city ? `, ending in ${request.end_city}` : "";
+  const tiles = request ? [...request.tags.map(tagLabel), ...request.wishes] : [];
 
   return (
-    <div className="rise-in mt-6 text-left">
-      <p className="text-center text-snow/80">Here&apos;s what we understood. Have a look before we plan.</p>
+    <div className="mt-2 text-center">
+      {request && (
+        <div className="rise-in">
+          <p className="text-sm uppercase tracking-[0.3em] text-gold">✦ Here&apos;s your trip, in a nutshell ✦</p>
+          <p className="mt-4 font-display text-3xl font-semibold text-snow sm:text-4xl [font-variation-settings:'SOFT'_100]">
+            {NUMBERS[days - 1] ?? days} {days === 1 ? "day" : "days"} of Christmas markets{route}
+          </p>
+          <p className="mt-2 text-lg text-gold">{longDate(request.first_day)} to {longDate(request.last_day)}</p>
+          <div aria-hidden className="mx-auto mt-5 flex max-w-sm items-center gap-4 text-gold/70">
+            <span className="h-px flex-1 bg-gradient-to-r from-transparent to-gold/50" />❄
+            <span className="h-px flex-1 bg-gradient-to-l from-transparent to-gold/50" />
+          </div>
+        </div>
+      )}
 
       {request && (
-        <div className="mt-4">
-          <Row title="When">
-            {longDate(request.first_day)} to {longDate(request.last_day)}
-            <span className="text-frost"> · {(Date.parse(request.last_day) - Date.parse(request.first_day)) / 86_400_000 + 1} days</span>
-          </Row>
-          <Row title="Where">
-            {request.start_city ? `Start in ${request.start_city}` : "Start anywhere"}
-            <span className="text-frost"> · </span>
-            {request.end_city ? `finish in ${request.end_city}` : "finish anywhere"}
-          </Row>
-          <Row title="Your pace">
-            <ul className="space-y-1">
+        <div className="mt-8 grid gap-5 text-left lg:grid-cols-3">
+          <Card icon="where" title="Where" delay={150}>
+            <RegionMap places={places} start={request.start_city ?? undefined} end={request.end_city ?? undefined} compact />
+            <p className="mt-3 text-snow">
+              {request.start_city ? `Start in ${request.start_city}` : "Start anywhere"}
+              <span className="text-frost"> · </span>
+              {request.end_city ? `finish in ${request.end_city}` : "finish anywhere"}
+            </p>
+          </Card>
+
+          <Card icon="pace" title="Your pace" delay={300}>
+            <ul className="space-y-2">
               {PACE.map(({ key, say }) => {
                 const value = request.settings[key];
-                const fromWishes = value !== (form.settings?.[key] ?? defaults[key]);
+                const asked = value !== (form.settings?.[key] ?? defaults[key]);
                 return (
-                  <li key={key} className={fromWishes ? "text-gold" : undefined}>
+                  <li key={key} className={asked ? "text-gold" : "text-snow"}>
                     {(say as (v: typeof value) => string)(value)}
-                    {fromWishes && <span className="text-sm italic text-gold/80"> · from your wishes</span>}
+                    {asked && <span className="ml-2 text-xs italic text-gold/80">✦ you asked</span>}
                   </li>
                 );
               })}
             </ul>
-          </Row>
-          <Row title="Your wishes">
-            {request.wishes.length ? (
+          </Card>
+
+          <Card icon="wishes" title="Your wishes" delay={450}>
+            {tiles.length ? (
               <div className="flex flex-wrap gap-2">
-                {request.wishes.map((wish) => (
-                  <span key={wish} className="border border-snow/20 bg-night-deep/40 px-3 py-1 text-sm">{wish}</span>
+                {tiles.map((tile) => (
+                  <span key={tile} className="border border-gold/40 bg-gold/10 px-3 py-1.5 text-sm text-snow
+                                              shadow-[0_0_12px_rgb(244_195_90/0.18)]">
+                    {tile}
+                  </span>
                 ))}
               </div>
             ) : (
-              <span className="text-frost">None given: we&apos;ll simply plan a lovely trip.</span>
+              <p className="text-frost">No wishes given, so we&apos;ll simply plan you a lovely trip.</p>
             )}
-            {request.tags.length > 0 && (
-              <p className="mt-3 text-sm text-frost">
-                We&apos;ll look out for: <span className="text-gold">{request.tags.map(tagLabel).join(" · ")}</span>
-              </p>
-            )}
-          </Row>
+          </Card>
         </div>
       )}
 
       {(notes.length > 0 || not_covered.length > 0) && (
-        <div className="mt-6 space-y-2 border border-gold/25 bg-night-deep/40 px-5 py-4 text-sm text-snow/90">
+        <div className="rise-in mt-6 space-y-2 border border-gold/25 bg-night-deep/40 px-5 py-4 text-left text-sm text-snow/90"
+             style={{ animationDelay: "600ms" }}>
+          <p className="text-xs uppercase tracking-[0.25em] text-gold">A little note</p>
           {notes.map((note) => <p key={note}><span aria-hidden className="mr-2 text-gold">✦</span>{note}</p>)}
           {not_covered.length > 0 && (
             <p>
               <span aria-hidden className="mr-2 text-gold">✦</span>
-              A few things MerryMapped can&apos;t arrange: {not_covered.join(", ")}. We&apos;ll plan everything else.
+              MerryMapped can&apos;t include {not_covered.join(", ")}, so we&apos;ll plan everything else.
             </p>
           )}
         </div>
       )}
 
       <div className="mt-8 flex flex-wrap items-center justify-end gap-3">
-        <TicketButton kind="quiet" onClick={onEdit}>Edit</TicketButton>
+        <TicketButton kind="quiet" onClick={onEdit}>Back</TicketButton>
         {request && <TicketButton onClick={onPlan}>Plan my trip</TicketButton>}
       </div>
     </div>

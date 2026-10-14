@@ -50,3 +50,17 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .rise-in { animation: none; }
 }
+
+/* A brief golden glow around something that needs attention (such as the calendar when no dates are chosen). */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(244 195 90 / 0); }
+  40% { box-shadow: 0 0 0 10px rgb(244 195 90 / 0.18), 0 0 30px rgb(244 195 90 / 0.35); }
+}
+
+.glow-pulse {
+  animation: glow-pulse 1.6s ease-in-out 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-pulse { animation: none; outline: 1px solid rgb(244 195 90 / 0.6); }
+}
