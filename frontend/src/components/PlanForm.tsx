@@ -57,7 +57,9 @@ export default function PlanForm() {
 
   const { options } = load;
   return (
-    <div className="mt-6 space-y-8 text-left">
+    // One column, about 592 px wide. On wide screens, two such columns side by side (same sizes as one
+    // column): the text-like parts on the left, the map on the right.
+    <div className="mt-6 grid gap-8 text-left xl:grid-cols-2 xl:gap-12">
       <section>
         <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">When</h3>
         <DatePicker firstAllowed={options.first_day} lastAllowed={options.last_day}

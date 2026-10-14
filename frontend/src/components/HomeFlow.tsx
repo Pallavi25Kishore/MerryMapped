@@ -76,7 +76,7 @@ export default function HomeFlow() {
 
       {/* The trip form's panel: rises in from below. */}
       <section aria-label="Plan your trip" inert={!planning}
-               className={`absolute inset-x-4 top-[18%] mx-auto max-h-[calc(82%-1rem)] max-w-2xl overflow-y-auto border border-snow/15 bg-night/55 p-8
+               className={`absolute inset-x-4 top-[18%] mx-auto max-h-[calc(82%-1rem)] max-w-2xl overflow-y-auto xl:max-w-[1312px] border border-snow/15 bg-night/55 p-8
                            shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-10 ${GLIDE}
                            ${planning ? "translate-y-0 opacity-100 delay-150" : "pointer-events-none translate-y-16 opacity-0"}`}>
         <h2 ref={panelHeading} tabIndex={-1} className="font-display text-3xl font-semibold outline-none">
