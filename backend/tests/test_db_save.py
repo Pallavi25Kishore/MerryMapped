@@ -92,3 +92,17 @@ def test_the_description_is_saved_and_replaced_on_a_rerun(engine):
 
     with Session(engine) as session:
         assert session.scalars(select(Market)).one().description == "Second description."
+
+
+def test_running_again_keeps_facts_entered_by_hand(engine):
+    save(engine, COLOGNE, collected(fact("opening_date", {"date": "2026-11-16"})))
+    with Session(engine) as session, session.begin():
+        market = session.scalars(select(Market)).one()
+        session.add(Fact(market_id=market.id, kind="closing_date", value={"date": "2026-12-23"},
+                         source_url="https://koeln-market.example/de/", checked_on=date(2026, 10, 21),
+                         status="entered by hand"))
+    save(engine, COLOGNE, collected(fact("opening_date", {"date": "2026-11-17"})), today=date(2026, 11, 1))
+
+    _, facts = facts_of(engine, COLOGNE)
+    assert sorted((f.kind, f.value["date"], f.status) for f in facts) == [
+        ("closing_date", "2026-12-23", "entered by hand"), ("opening_date", "2026-11-17", "checked")]

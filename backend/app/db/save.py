@@ -20,7 +20,8 @@ class MarketDetails:
 
 def save_market(session: Session, details: MarketDetails, collected: Collected, today: date,
                 description: str | None = None) -> Market:
-    """Find or create the market, and replace its facts with the newly checked ones. The caller commits."""
+    """Find or create the market, and replace its checked facts with the newly checked ones. Facts
+    entered by hand are always kept. The caller commits."""
     market = session.scalars(select(Market).where(Market.website == details.website)).one_or_none()
     if market is None:
         market = Market(website=details.website)
@@ -29,7 +30,7 @@ def save_market(session: Session, details: MarketDetails, collected: Collected, 
     market.description = description
     session.flush()  # the database gives a new market its id
 
-    session.execute(delete(Fact).where(Fact.market_id == market.id))
+    session.execute(delete(Fact).where(Fact.market_id == market.id, Fact.status != "entered by hand"))
     session.add_all(
         Fact(
             market_id=market.id,
