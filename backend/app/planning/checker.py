@@ -17,6 +17,7 @@ class MarketInfo:
     city: str
     facts: list[dict]  # each {"kind": ..., "value": ...}
     description: str | None = None
+    website: str | None = None
 
 
 @dataclass
@@ -27,11 +28,11 @@ class CheckResult:
 
 
 def load_markets(session: Session) -> dict[int, MarketInfo]:
-    """Every market's name, city and facts, by market id."""
+    """Every market's name, city, facts, description and website, by market id."""
     facts = {}
     for fact in session.scalars(select(Fact)):
         facts.setdefault(fact.market_id, []).append({"kind": fact.kind, "value": fact.value})
-    return {m.id: MarketInfo(m.name, m.city, facts.get(m.id, []), m.description)
+    return {m.id: MarketInfo(m.name, m.city, facts.get(m.id, []), m.description, m.website)
             for m in session.scalars(select(Market))}
 
 
