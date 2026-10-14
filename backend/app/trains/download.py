@@ -1,3 +1,4 @@
+import argparse
 import csv
 import io
 import shutil
@@ -55,9 +56,14 @@ def download(feed: Feed, gtfs_dir: Path = GTFS_DIR) -> str:
     return f"{feed.name}: {size:.1f} MB, {len(names)} tables, trains from {covers}"
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="Download the timetable feeds.")
+    parser.add_argument("--only", metavar="FEED", choices=[feed.name for feed in FEEDS],
+                        help="download just this feed, leaving the others as they are")
+    only = parser.parse_args(argv).only
     for feed in FEEDS:
-        print(download(feed))
+        if only is None or feed.name == only:
+            print(download(feed))
 
 
 if __name__ == "__main__":

@@ -35,3 +35,11 @@ def test_date_range_uses_calendar_and_added_dates_only(tmp_path):
 
 def test_date_range_none_without_calendars(tmp_path):
     assert date_range(tmp_path) is None
+
+
+def test_only_downloads_the_one_feed(monkeypatch, capsys):
+    from app.trains import download as download_module
+    fetched = []
+    monkeypatch.setattr(download_module, "download", lambda feed: fetched.append(feed.name) or feed.name)
+    download_module.main(["--only", "sncb"])
+    assert fetched == ["sncb"]
