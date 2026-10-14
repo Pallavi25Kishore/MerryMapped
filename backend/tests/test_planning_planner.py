@@ -97,6 +97,7 @@ def test_problems_go_back_to_the_planner_until_fixed():
     claude = PretendClaude(WRONG_BED, GOOD)
     planned = plan_trip(REQUEST, MARKETS, LINKS, client=claude)
     assert (planned.answers, planned.result.problems) == (2, [])
+    assert planned.rounds == [["Thu 24 Dec: the night must be spent in Aachen, where the day ends, not Köln."], []]
     feedback = claude.requests[1]["messages"][-1]["content"]
     assert "- Thu 24 Dec: the night must be spent in Aachen, where the day ends, not Köln." in feedback
 

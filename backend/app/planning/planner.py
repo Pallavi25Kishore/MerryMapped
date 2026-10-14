@@ -129,10 +129,15 @@ def plan_message(request: TripRequest, markets: dict[int, MarketInfo], links: Li
 
 @dataclass
 class Planned:
-    """The planner's last plan (None if none could be read), its check, and how many answers it took."""
+    """The planner's last plan (None if none could be read), its check, and the problems the
+    checker found in each answer, in order (the last list is empty when the plan passed)."""
     plan: Plan | None
     result: CheckResult
-    answers: int
+    rounds: list[list[str]]
+
+    @property
+    def answers(self) -> int:
+        return len(self.rounds)
 
 
 def plan_trip(request: TripRequest, markets: dict[int, MarketInfo], links: Links,
@@ -142,8 +147,8 @@ def plan_trip(request: TripRequest, markets: dict[int, MarketInfo], links: Links
     client = client or anthropic.Anthropic()
     messages = [{"role": "user", "content": plan_message(request, markets, links)}]
     schema = plan_schema(sorted(markets))
-    plan, result = None, CheckResult()
-    for answer in range(1, MAX_FIX_ROUNDS + 2):
+    plan, result, rounds = None, CheckResult(), []
+    for _ in range(MAX_FIX_ROUNDS + 1):
         response = client.messages.create(
             model=model, max_tokens=8000, system=PLANNER_PROMPT.read_text(encoding="utf-8"),
             output_config={"format": {"type": "json_schema", "schema": schema}},
@@ -155,10 +160,11 @@ def plan_trip(request: TripRequest, markets: dict[int, MarketInfo], links: Links
             result = CheckResult(problems=[parsed])
         else:
             plan, result = parsed, check(parsed, request, markets, links)
+        rounds.append(list(result.problems))
         if not result.problems:
-            return Planned(plan, result, answer)
+            return Planned(plan, result, rounds)
         messages.append({"role": "assistant", "content": reply})
         messages.append({"role": "user", "content":
             "The checker found these problems. Fix every one and change as little else as possible:\n"
             + "\n".join(f"- {problem}" for problem in result.problems)})
-    return Planned(plan, result, MAX_FIX_ROUNDS + 1)
+    return Planned(plan, result, rounds)

@@ -14,8 +14,10 @@ details and tags), and the travel between cities worked out with the traveller's
   - `travel_back`: only on a day trip (allowed only when the settings say so): the cities
     travelled from and to in the evening, back to the city slept in. Otherwise null.
 - `why`: one short sentence on why this market suits this traveller, using only its
-  description, details and tags, and naming the wish it meets when there is one. Add nothing
-  you know about the market or the city from elsewhere.
+  description, details and tags, and naming the wish it meets when there is one. It is about
+  the market and the traveller only: never mention trains, timing, other plans or why other
+  markets were not chosen. Add nothing you know about the market or the city from elsewhere.
+  If the market has no description, details or tags, leave `why` empty: the app shows its link.
 
 ## Hard rules (a checker in code enforces these)
 
@@ -30,13 +32,15 @@ details and tags), and the travel between cities worked out with the traveller's
 7. No more markets in a day than the settings allow.
 8. If a start city or end city is given, the first day starts there and the last night is
    spent there.
+9. Never visit the same market twice in one trip.
 
 ## Wishes
 
 - Fit in as many of the traveller's wishes and picked tags as is realistic. The hard rules
   always come first.
-- A day with travel and no market is fine when it makes the trip work. Visiting a market again
-  on another day is fine if it is the best option.
+- Plan a market on every day where a market not yet visited fits, unless the traveller's
+  wishes say otherwise (for example rest days or a slow pace). A day with no market is fine
+  when none fits.
 
 ## Fixing a plan
 

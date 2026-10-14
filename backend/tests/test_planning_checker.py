@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import date
 
 from app.planning.checker import MarketInfo, check
@@ -58,11 +59,14 @@ def test_a_good_plan_has_no_problems_and_gets_its_trains():
 
 def test_every_date_exactly_once():
     result = run(plan(GOOD.days[0]))
-    assert result.problems[0].startswith("The plan must have exactly one day for each date")
+    assert result.problems == ["The plan must have exactly one day for each date from 2026-12-15 to 2026-12-16, "
+                               "in order; it has 2026-12-15."]
+    wrong_year = run(plan(replace(GOOD.days[0], day=date(2025, 12, 15)), GOOD.days[1]))
+    assert "it has 2025-12-15, 2026-12-16" in wrong_year.problems[0]
 
 
 def test_days_must_connect():
-    p = plan(GOOD.days[0], Day(D2, Travel("Aachen", "Köln"), visits(1), "Köln"))
+    p = plan(GOOD.days[0], Day(D2, Travel("Aachen", "Köln"), visits(), "Köln"))
     assert run(p).problems == ["Wed 16 Dec: the travel leaves from Aachen, but the night before was in Köln."]
 
 
@@ -133,3 +137,8 @@ def test_start_and_end_cities_when_asked():
     assert run(GOOD, start_city="Aachen", end_city="Köln").problems == [
         "Tue 15 Dec: the trip must start in Aachen, not Köln.",
         "Wed 16 Dec: the last night must be in Köln, not Aachen."]
+
+
+def test_never_visit_a_market_twice():
+    p = plan(Day(D1, None, visits(1), "Köln"), Day(D2, None, visits(2, 1), "Köln"))
+    assert run(p).problems == ["Wed 16 Dec: Dom market is already visited on Tue 15 Dec; never visit a market twice."]

@@ -41,15 +41,15 @@ def hhmm(minutes: int) -> str:
 
 def check(plan: Plan, request: TripRequest, markets: dict[int, MarketInfo], links: Links) -> CheckResult:
     """Hold the plan to the hard rules: every date once, days that connect, the start and end
-    cities asked for, only our markets, each market open with enough time, a train for every
-    travel within the settings."""
+    cities asked for, only our markets, each market open with enough time and visited once,
+    a train for every travel within the settings."""
     first_day, last_day, settings = request.first_day, request.last_day, request.settings
     result = CheckResult()
     wanted = [first_day + timedelta(days=n) for n in range((last_day - first_day).days + 1)]
     got = [day.day for day in plan.days]
     if got != wanted:
-        result.problems.append(f"The plan must have exactly one day for each date from {first_day:%a %d %b} "
-                               f"to {last_day:%a %d %b}, in order; it has {', '.join(f'{d:%d %b}' for d in got)}.")
+        result.problems.append(f"The plan must have exactly one day for each date from {first_day.isoformat()} "
+                               f"to {last_day.isoformat()}, in order; it has {', '.join(d.isoformat() for d in got)}.")
         return result
 
     first = plan.days[0]
@@ -64,6 +64,14 @@ def check(plan: Plan, request: TripRequest, markets: dict[int, MarketInfo], link
     for day in plan.days:
         check_day(day, city, settings, markets, links, result)
         city = day.sleep_in
+
+    first_visit = {}
+    for day in plan.days:
+        for visit in day.visits:
+            if visit.market_id in first_visit and visit.market_id in markets:
+                result.problems.append(f"{day.day:%a %d %b}: {markets[visit.market_id].name} is already visited on "
+                                       f"{first_visit[visit.market_id]:%a %d %b}; never visit a market twice.")
+            first_visit.setdefault(visit.market_id, day.day)
     return result
 
 
