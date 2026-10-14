@@ -19,3 +19,6 @@ DESCRIPTION_WRITER_MODEL = "claude-sonnet-5-5"
 
 # The Claude model that checks each fact against its own quote (the verification layer).
 FACT_VERIFIER_MODEL = "claude-sonnet-5-5"
+
+# The Claude model that drafts trip plans for the checker.
+PLANNER_MODEL = "claude-sonnet-5-5"

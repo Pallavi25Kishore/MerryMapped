@@ -1,12 +1,21 @@
+import json
+from dataclasses import dataclass
 from datetime import date, timedelta
 from itertools import permutations
+from pathlib import Path
 
-from app.planning.checker import MarketInfo, hhmm
+import anthropic
+
+from app.planning.checker import CheckResult, MarketInfo, check, hhmm
 from app.planning.opening import open_window
-from app.planning.plan import Settings, TripRequest
+from app.planning.plan import Day, Plan, Settings, Travel, TripRequest, Visit
 from app.planning.trains import Links, Train, pick_train
 from app.reading.market_reader import TAGS
+from app.settings import PLANNER_MODEL
 from app.trains.stations import STATIONS
+
+PLANNER_PROMPT = Path(__file__).resolve().parents[2] / "prompts" / "planner.md"
+MAX_FIX_ROUNDS = 3  # after the first draft, the planner may fix its plan this many times
 
 
 def trip_days(request: TripRequest) -> list[date]:
@@ -77,3 +86,79 @@ def travel_text(links: Links, days: list[date], settings: Settings) -> str:
             line += f"; no train within your settings on {', '.join(f'{d:%d %b}' for d in missing)}"
         lines.append(line)
     return "\n".join(lines)
+
+
+def plan_schema(market_ids: list[int]) -> dict:
+    """The answer format: city names limited to our cities and market ids to our markets."""
+    city = {"type": "string", "enum": list(STATIONS)}
+    travel = {"anyOf": [{"type": "object", "properties": {"from": city, "to": city},
+                         "required": ["from", "to"], "additionalProperties": False},
+                        {"type": "null"}]}
+    visit = {"type": "object",
+             "properties": {"market_id": {"type": "integer", "enum": market_ids}, "why": {"type": "string"}},
+             "required": ["market_id", "why"], "additionalProperties": False}
+    day = {"type": "object",
+           "properties": {"date": {"type": "string", "description": "YYYY-MM-DD"}, "travel": travel,
+                          "visits": {"type": "array", "items": visit}, "sleep_in": city, "travel_back": travel},
+           "required": ["date", "travel", "visits", "sleep_in", "travel_back"], "additionalProperties": False}
+    return {"type": "object", "properties": {"days": {"type": "array", "items": day}},
+            "required": ["days"], "additionalProperties": False}
+
+
+def parse_plan(reply: str) -> Plan | str:
+    """The planner's answer as a Plan, or a sentence saying why it could not be read."""
+    def travel(value):
+        return Travel(value["from"], value["to"]) if value else None
+    try:
+        days = json.loads(reply)["days"]
+        return Plan(tuple(Day(date.fromisoformat(d["date"]), travel(d["travel"]),
+                              tuple(Visit(v["market_id"], v["why"]) for v in d["visits"]),
+                              d["sleep_in"], travel(d["travel_back"])) for d in days))
+    except (ValueError, KeyError, TypeError) as error:
+        return f"The plan could not be read ({error}); answer again in the required format."
+
+
+def plan_message(request: TripRequest, markets: dict[int, MarketInfo], links: Links) -> str:
+    days = trip_days(request)
+    market_blocks = "\n\n".join(market_text(market_id, market, days) for market_id, market in sorted(markets.items()))
+    return ("Plan this trip.\n\n"
+            f"<trip>\n{trip_text(request)}\n</trip>\n\n"
+            f"<markets>\n{market_blocks}\n</markets>\n\n"
+            f"<travel>\n{travel_text(links, days, request.settings)}\n</travel>")
+
+
+@dataclass
+class Planned:
+    """The planner's last plan (None if none could be read), its check, and how many answers it took."""
+    plan: Plan | None
+    result: CheckResult
+    answers: int
+
+
+def plan_trip(request: TripRequest, markets: dict[int, MarketInfo], links: Links,
+              client=None, model: str = PLANNER_MODEL) -> Planned:
+    """Draft a plan, check it, and send the problems back for fixing, at most MAX_FIX_ROUNDS times.
+    The last plan is returned with any problems left."""
+    client = client or anthropic.Anthropic()
+    messages = [{"role": "user", "content": plan_message(request, markets, links)}]
+    schema = plan_schema(sorted(markets))
+    plan, result = None, CheckResult()
+    for answer in range(1, MAX_FIX_ROUNDS + 2):
+        response = client.messages.create(
+            model=model, max_tokens=8000, system=PLANNER_PROMPT.read_text(encoding="utf-8"),
+            output_config={"format": {"type": "json_schema", "schema": schema}},
+            messages=messages,
+        )
+        reply = next(block.text for block in response.content if block.type == "text")
+        parsed = parse_plan(reply)
+        if isinstance(parsed, str):
+            result = CheckResult(problems=[parsed])
+        else:
+            plan, result = parsed, check(parsed, request, markets, links)
+        if not result.problems:
+            return Planned(plan, result, answer)
+        messages.append({"role": "assistant", "content": reply})
+        messages.append({"role": "user", "content":
+            "The checker found these problems. Fix every one and change as little else as possible:\n"
+            + "\n".join(f"- {problem}" for problem in result.problems)})
+    return Planned(plan, result, MAX_FIX_ROUNDS + 1)
