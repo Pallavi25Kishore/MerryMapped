@@ -27,7 +27,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${fraunces.variable} ${nunito.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <div aria-hidden className="winter-night fixed inset-0 z-0" />
+        {/* A black sheet under the picture, which is very slightly see-through: a touch deeper and calmer. */}
+        <div aria-hidden className="fixed inset-0 z-0 bg-black" />
+        <div aria-hidden className="winter-night fixed inset-0 z-0 opacity-[0.72]" />
         <NightSky />
         <Header />
         <div className="relative z-10 flex flex-1 flex-col">{children}</div>

@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import SoundButton from "@/components/SoundButton";
 
-// The header on every page, floating on the night sky: the pages, on the right. The sound button
-// joins it with the sound system.
+// The header on every page, floating on the night sky: the pages and the sound bell, on the right.
 
 const PAGES = [
   { href: "/", label: "Home" },
@@ -31,6 +31,7 @@ export default function Header() {
             </Link>
           );
         })}
+        <SoundButton />
       </nav>
     </header>
   );
