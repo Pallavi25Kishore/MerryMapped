@@ -4,23 +4,12 @@ import { longDate } from "@/components/DatePicker";
 import RegionMap from "@/components/RegionMap";
 import TicketButton from "@/components/TicketButton";
 import type { Place, Settings, TripForm, Understood } from "@/lib/api";
+import { hhmm, hours, numberWord } from "@/lib/words";
 
 // The confirm screen, like a Christmas card: a headline about the trip, then three cards (where, with
 // a small map; the pace, marking what was asked for in the wishes; every wish, in the traveller's own
 // words, as a tile), a little note with the backend's notes and what MerryMapped can't include, and
 // Back (to the form) or Plan my trip.
-
-const NUMBERS = ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
-                 "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen"];
-
-function hhmm(minutes: number): string {
-  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
-}
-
-function hours(minutes: number): string {
-  const h = Math.floor(minutes / 60), m = minutes % 60;
-  return h && m ? `${h} h ${m} min` : h ? `${h} h` : `${m} min`;
-}
 
 const PACE: { key: keyof Settings; say: (value: never) => string }[] = [
   { key: "earliest_train", say: (m: number) => `No trains before ${hhmm(m)}` },
@@ -76,7 +65,7 @@ export default function ConfirmView({ understood, form, defaults, places, onEdit
         <div className="rise-in">
           <p className="text-sm uppercase tracking-[0.3em] text-gold">✦ Here&apos;s your trip, in a nutshell ✦</p>
           <p className="mt-4 font-display text-3xl font-semibold text-snow sm:text-4xl [font-variation-settings:'SOFT'_100]">
-            {NUMBERS[days - 1] ?? days} {days === 1 ? "day" : "days"} of Christmas markets{route}
+            {numberWord(days)} {days === 1 ? "day" : "days"} of Christmas markets{route}
           </p>
           <p className="mt-2 text-lg text-gold">{longDate(request.first_day)} to {longDate(request.last_day)}</p>
           <div aria-hidden className="mx-auto mt-5 flex max-w-sm items-center gap-4 text-gold/70">

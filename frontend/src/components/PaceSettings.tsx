@@ -1,6 +1,7 @@
 "use client";
 
 import type { Settings, SettingRange } from "@/lib/api";
+import { hhmm, hours } from "@/lib/words";
 
 // Your pace: the planner's settings, always shown. Each has a plain label and a − value + control
 // within the backend's limits; day trips is an on/off switch. Only settings the traveller changed
@@ -9,16 +10,11 @@ import type { Settings, SettingRange } from "@/lib/api";
 type Numeric = Exclude<keyof Settings, "day_trips">;
 
 const STEPPERS: { key: Numeric; label: string; step: number; show: (value: number) => string }[] = [
-  { key: "earliest_train", label: "No trains before", step: 30, show: (m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}` },
+  { key: "earliest_train", label: "No trains before", step: 30, show: hhmm },
   { key: "min_market_minutes", label: "At each market, at least", step: 30, show: hours },
   { key: "max_travel_minutes", label: "Train travel a day, at most", step: 30, show: hours },
   { key: "max_markets_per_day", label: "Markets a day, up to", step: 1, show: String },
 ];
-
-function hours(minutes: number): string {
-  const h = Math.floor(minutes / 60), m = minutes % 60;
-  return h && m ? `${h} h ${m} min` : h ? `${h} h` : `${m} min`;
-}
 
 type Props = {
   ranges: Record<string, SettingRange>;

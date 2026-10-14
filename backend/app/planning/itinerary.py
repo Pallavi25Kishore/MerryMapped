@@ -27,8 +27,9 @@ def train_json(train: Train | None) -> dict | None:
     if train is None:
         return None
     return {"depart": hhmm(train.depart), "arrive": hhmm(train.arrive), "via": train.via,
-            "legs": [{"from": leg["from"], "to": leg["to"], "depart": hhmm(leg["depart"]), "arrive": hhmm(leg["arrive"])}
-                     for leg in train.legs]}
+            "legs": [{"from": leg["from"], "to": leg["to"], "depart": hhmm(leg["depart"]), "arrive": hhmm(leg["arrive"]),
+                      "minutes": leg["arrive"] - leg["depart"], "railway": leg.get("feed"),
+                      "estimate": bool(leg.get("estimate"))} for leg in train.legs]}
 
 
 def visit_json(market_id: int, why: str, market: MarketInfo) -> dict:

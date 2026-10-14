@@ -64,3 +64,17 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .glow-pulse { animation: none; outline: 1px solid rgb(244 195 90 / 0.6); }
 }
+
+/* A gentle twinkle for fairy-light bulbs (see StringLights); each bulb has its own delay. */
+@keyframes twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.twinkle {
+  animation: twinkle 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .twinkle { animation: none; }
+}

@@ -46,7 +46,15 @@ export type TripRequest = {
 
 export type Understood = { request: TripRequest | null; notes: string[]; not_covered: string[] };
 
-export type Leg = { from: string; to: string; depart: string; arrive: string };
+export type Leg = {
+  from: string;
+  to: string;
+  depart: string;
+  arrive: string;
+  minutes: number;
+  railway: string | null; // which timetable it came from (see railway() in words.ts)
+  estimate: boolean; // times borrowed from a similar weekday
+};
 export type Train = { depart: string; arrive: string; via: string | null; legs: Leg[] };
 export type Travel = { from: string; to: string; train: Train | null };
 

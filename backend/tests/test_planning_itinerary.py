@@ -32,7 +32,7 @@ MARKETS = {1: MarketInfo("Köln market", "Köln", [{"kind": "tag", "value": {"ta
                                                   {"kind": "detail", "value": {"text": "mulled wine"}}],
                          "A market by the cathedral.", "https://koeln-market.example/"),
            2: MarketInfo("Aachen market", "Aachen", [], None, "https://aachen-market.example/")}
-TRAIN = Train(({"from": "Köln Hbf", "to": "Aachen Hbf", "depart": 500, "arrive": 540},))
+TRAIN = Train(({"from": "Köln Hbf", "to": "Aachen Hbf", "depart": 500, "arrive": 540, "feed": "germany_long_distance"},))
 
 
 def test_the_itinerary_shows_trains_markets_and_wishes():
@@ -48,7 +48,8 @@ def test_the_itinerary_shows_trains_markets_and_wishes():
                                 "dont_miss": ["mulled wine"], "website": "https://koeln-market.example/"}]
     assert second["travel"] == {"from": "Köln", "to": "Aachen", "train": {
         "depart": "08:20", "arrive": "09:00", "via": None,
-        "legs": [{"from": "Köln Hbf", "to": "Aachen Hbf", "depart": "08:20", "arrive": "09:00"}]}}
+        "legs": [{"from": "Köln Hbf", "to": "Aachen Hbf", "depart": "08:20", "arrive": "09:00", "minutes": 40,
+                  "railway": "germany_long_distance", "estimate": False}]}}
     assert second["visits"][0]["tiles"] == [] and second["visits"][0]["website"] == "https://aachen-market.example/"
     assert itinerary["warnings"] == ["Thu 24 Dec: the train times are estimates"]
     assert itinerary["wishes"] == [{"wish": "mulled wine", "verdict": "met", "note": "Köln market has mulled wine.",
