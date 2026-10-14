@@ -54,11 +54,11 @@ def test_a_market_over_the_daily_limit_is_removed():
     assert "more than 2 in one day" in repaired.removed[0].reason
 
 
-def test_a_market_already_visited_is_removed():
+def test_a_return_visit_while_a_new_market_is_open_is_removed():
     stay = Plan((Day(D1, None, (Visit(1),), "Köln"), Day(D2, None, (Visit(1), Visit(4)), "Köln")))
     repaired = repair(stay, REQUEST, MARKETS, LINKS)
     assert ids(repaired) == [[1], [4]]
-    assert "never visit a market twice" in repaired.removed[0].reason
+    assert "plan the new market first" in repaired.removed[0].reason
 
 
 def test_a_day_whose_travel_fails_stays_marked_and_keeps_no_markets():

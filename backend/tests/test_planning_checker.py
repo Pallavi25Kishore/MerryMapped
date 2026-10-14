@@ -139,6 +139,62 @@ def test_start_and_end_cities_when_asked():
         "Wed 16 Dec: the last night must be in Köln, not Aachen."]
 
 
-def test_never_visit_a_market_twice():
-    p = plan(Day(D1, None, visits(1), "Köln"), Day(D2, None, visits(2, 1), "Köln"))
-    assert run(p).problems == ["Wed 16 Dec: Dom market is already visited on Tue 15 Dec; never visit a market twice."]
+def test_a_return_visit_while_a_new_market_there_is_open_is_a_problem():
+    p = plan(Day(D1, None, visits(1), "Köln"), Day(D2, None, visits(1), "Köln"))
+    assert run(p).problems == ["Wed 16 Dec: Dom market was already visited on Tue 15 Dec, but Angel market in Köln "
+                               "is open that day and not yet visited: plan the new market first."]
+
+
+def test_a_return_visit_is_fine_when_no_new_market_fits():
+    p = plan(Day(D1, None, visits(1, 2), "Köln"), Day(D2, None, visits(1), "Köln"))  # both Köln markets seen
+    assert run(p).problems == []
+
+
+def test_coming_back_to_a_city_for_a_market_already_visited_is_a_problem():
+    p = plan(Day(D1, None, visits(3), "Aachen"), Day(D2, Travel("Aachen", "Köln"), (), "Köln"),
+             Day(date(2026, 12, 17), Travel("Köln", "Aachen"), visits(3), "Aachen"))
+    links = {**LINKS, ("Aachen", "Köln", D2): [[leg("Aachen Hbf", "Köln Hbf", 600, 640)]],
+             ("Köln", "Aachen", date(2026, 12, 17)): [[leg("Köln Hbf", "Aachen Hbf", 600, 640)]]}
+    problems = check(p, TripRequest(D1, date(2026, 12, 17)), MARKETS, links).problems
+    assert ("Thu 17 Dec: Aachen market was already visited on Tue 15 Dec. Coming back to Aachen for it later "
+            "isn't allowed: plan a second day there only while staying on.") in problems
+
+
+def test_the_same_market_twice_on_one_day_is_a_problem():
+    p = plan(Day(D1, None, visits(1, 1), "Köln"), Day(D2, None, visits(2), "Köln"))
+    assert "Tue 15 Dec: Dom market is planned twice on the same day; plan it once." in run(p).problems
+
+
+ROUND = {("Köln", "Aachen", D2): [[leg("Köln Hbf", "Aachen Hbf", 600, 640)]],
+         ("Aachen", "Köln", date(2026, 12, 17)): [[leg("Aachen Hbf", "Köln Hbf", 600, 640)]],
+         ("Köln", "Aachen", date(2026, 12, 18)): [[leg("Köln Hbf", "Aachen Hbf", 600, 640)]]}
+
+
+def test_the_route_must_not_double_back():
+    p = plan(Day(D1, None, visits(1), "Köln"), Day(D2, Travel("Köln", "Aachen"), visits(3), "Aachen"),
+             Day(date(2026, 12, 17), Travel("Aachen", "Köln"), visits(2), "Köln"))
+    problems = check(p, TripRequest(D1, date(2026, 12, 17)), MARKETS, ROUND).problems
+    assert problems == ["Thu 17 Dec: coming back to Köln, where you stayed until Tue 15 Dec, makes the route "
+                        "double back. Plan onward instead, or stay longer where you are."]
+
+
+def test_coming_back_on_the_last_night_is_fine_when_the_trip_ends_there():
+    p = plan(Day(D1, None, visits(1), "Köln"), Day(D2, Travel("Köln", "Aachen"), visits(3), "Aachen"),
+             Day(date(2026, 12, 17), Travel("Aachen", "Köln"), visits(2), "Köln"))
+    assert check(p, TripRequest(D1, date(2026, 12, 17), end_city="Köln"), MARKETS, ROUND).problems == []
+
+
+def test_at_most_two_days_at_a_market():
+    d3 = date(2026, 12, 17)
+    p = plan(Day(D1, None, visits(1, 2), "Köln"), Day(D2, None, visits(1), "Köln"), Day(d3, None, visits(1), "Köln"))
+    assert check(p, TripRequest(D1, d3), MARKETS, LINKS).problems == [
+        "Thu 17 Dec: Dom market already has 2 days. Spread the extra days over other markets on the way, or plan a "
+        "free day."]
+
+
+def test_the_last_open_market_can_have_more_days():
+    d3, d4 = date(2026, 12, 25), date(2026, 12, 26)
+    late = {1: market("Season's end", "Köln", last="2026-12-31"), 2: market("Closed early", "Köln", last="2026-12-23")}
+    p = plan(Day(d3, None, visits(1), "Köln"), Day(d4, None, visits(1), "Köln"),
+             Day(date(2026, 12, 27), None, visits(1), "Köln"))
+    assert check(p, TripRequest(d3, date(2026, 12, 27)), late, {}).problems == []

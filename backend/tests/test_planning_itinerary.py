@@ -66,3 +66,15 @@ def test_left_out_markets_and_a_marked_day_are_shown_with_tips():
     assert second["problem"] == "no train from Köln to Aachen fits your settings."
     assert second["tip"] == "allowing trains from 08:00 would make this day work."
     assert second["left_out"] == [{"market_id": 2, "name": "Aachen market", "reason": removed[0].reason, "tip": None}]
+
+
+def test_a_day_without_markets_says_where_and_why():
+    closing = [{"kind": "opening_date", "value": {"date": "2026-11-20"}}, {"kind": "closing_date", "value": {"date": "2026-12-23"}},
+               {"kind": "hours", "value": {"days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"], "opens": "11:00", "closes": "21:00"}}]
+    markets = {1: MarketInfo("Köln market", "Köln", closing)}
+    plan = Plan((Day(D1, None, (Visit(1),), "Köln"), Day(D2, None, (), "Köln")))
+    first, second = build_itinerary(plan, CheckResult(), markets)["days"]
+    assert first["free_day"] is None
+    assert second["free_day"] == {"city": "Köln", "reason": "closed"}  # it closed on the 23rd
+    open_all_season = {1: MarketInfo("Köln market", "Köln", closing[:1] + [{"kind": "closing_date", "value": {"date": "2026-12-31"}}] + closing[2:])}
+    assert build_itinerary(plan, CheckResult(), open_all_season)["days"][1]["free_day"] == {"city": "Köln", "reason": "rest"}

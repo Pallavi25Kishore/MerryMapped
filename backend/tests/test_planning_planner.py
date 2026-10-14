@@ -132,7 +132,7 @@ def test_a_plan_left_with_problems_comes_with_its_repair():
     assert planned.result.problems
     assert planned.repaired.result.problems == []
     assert [[v.market_id for v in d.visits] for d in planned.repaired.plan.days] == [[1], [2]]
-    assert "never visit a market twice" in planned.repaired.removed[0].reason
+    assert "planned twice on the same day" in planned.repaired.removed[0].reason
 
 
 def test_a_plan_that_passes_needs_no_repair():

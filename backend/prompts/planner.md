@@ -32,7 +32,14 @@ details and tags), and the travel between cities worked out with the traveller's
 7. No more markets in a day than the settings allow.
 8. If a start city or end city is given, the first day starts there and the last night is
    spent there.
-9. Never visit the same market twice in one trip.
+9. New markets first. A market already visited may be visited again only while staying on in
+   its city since the first visit (never after leaving and coming back), and only on a day when no
+   market in that city that the trip never visits is open long enough. Never plan the same market
+   twice on one day, and give no market more than two days while another market with days to
+   spare is open that day (late in the season, the last open market can have more).
+10. The route moves onward: never sleep again in a city you have left (changing trains there is
+    fine). The one exception is the last night, in the end city if one is given. To fit a market
+    that is out of the way, visit it on the way, or stay longer where you are.
 
 ## Wishes
 
@@ -40,9 +47,21 @@ details and tags), and the travel between cities worked out with the traveller's
   rules always come first.
 - A market marked "Matches the wishes" has a tag the traveller wants: prefer it when the hard
   rules allow.
-- Plan a market on every day where a market not yet visited fits, unless the traveller's
-  wishes say otherwise (for example rest days or a slow pace). A day with no market is fine
-  when none fits.
+- Plan the route as a line that moves onward, like a journey (rule 10): not Nürnberg, Dresden,
+  then Nürnberg again. Order the cities so each next one is onward from the last.
+- Fit in as many different markets as the route allows before staying on anywhere: choose the
+  order of cities so that out-of-the-way places are visited on the way (for example Rothenburg
+  between Colmar and Nürnberg), not left out.
+- Every day, visit a market if one is open where you are, unless the traveller's wishes ask for
+  rest days or a slow pace. When no new market fits, stay on and visit an open market there again
+  (rule 9), at most two days per market; its `why` says so ("Back for a second evening: …").
+  Spread such second days along the route (for example two days in Nürnberg and two in Dresden),
+  rather than many days at the last stop.
+- Late in the season most markets close (many on 23 or 24 December). Look at each market's hours
+  and move on, along the route, to where markets are still open, rather than leave days empty.
+- A day without a market is only for when every market where you are is closed that day (for
+  example after 24 December) or already has its two days, or when the wishes ask for it. The app then shows it as a free day
+  for sightseeing.
 
 ## Fixing a plan
 

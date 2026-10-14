@@ -1,6 +1,7 @@
 from datetime import date
 
 from app.planning.checker import CheckResult, MarketInfo, hhmm
+from app.planning.opening import open_window
 from app.planning.plan import Plan
 from app.planning.repair import Removed
 from app.planning.trains import Train
@@ -39,6 +40,17 @@ def visit_json(market_id: int, why: str, market: MarketInfo) -> dict:
             "website": market.website}
 
 
+def free_day(day, markets: dict[int, MarketInfo]) -> dict | None:
+    """For a day without markets: the city it is spent in, and why it is free. "closed" when every
+    market in that city is closed that day; otherwise "rest" (kept free on purpose)."""
+    if day.visits:
+        return None
+    city = day.travel.to_city if day.travel else day.sleep_in
+    here = [m for m in markets.values() if m.city == city]
+    closed = all(not isinstance(open_window(m.facts, day.day), tuple) for m in here)
+    return {"city": city, "reason": "closed" if here and closed else "rest"}
+
+
 def build_itinerary(plan: Plan, result: CheckResult, markets: dict[int, MarketInfo], removed: list[Removed] = (),
                     day_tips: dict[date, str] = None, wish_notes: list[WishNote] = ()) -> dict:
     """What the website shows: for each day the trains, the markets (see visit_json), the city slept in, any market left out (with the reason and a tip), and the
@@ -58,6 +70,7 @@ def build_itinerary(plan: Plan, result: CheckResult, markets: dict[int, MarketIn
             "sleep_in": day.sleep_in,
             "left_out": [{"market_id": r.market_id, "name": markets[r.market_id].name if r.market_id in markets else None,
                           "reason": r.reason, "tip": r.tip} for r in removed if r.day == day.day],
+            "free_day": free_day(day, markets),
             "problem": "; ".join(problems) or None,
             "tip": day_tips.get(day.day),
         })

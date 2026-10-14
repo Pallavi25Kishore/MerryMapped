@@ -83,7 +83,7 @@ def test_a_plan_left_with_problems_is_repaired_before_saving(session, monkeypatc
     pretend_planner(monkeypatch, *[repeat] * (planner.MAX_FIX_ROUNDS + 1))
     days = client.post("/api/plan", json=CONFIRMED).json()["itinerary"]["days"]
     assert [v["market_id"] for v in days[1]["visits"]] == [2]
-    assert "never visit a market twice" in days[1]["left_out"][0]["reason"]
+    assert "planned twice on the same day" in days[1]["left_out"][0]["reason"]
 
 
 def test_a_request_that_breaks_the_rules_is_refused_before_planning(session, monkeypatch):
