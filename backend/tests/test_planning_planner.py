@@ -123,6 +123,17 @@ def test_gives_up_after_the_fixing_rounds_and_returns_the_problems():
     assert planned.result.problems and planned.plan is not None
 
 
+
+WORSE = {"days": [day("2026-12-23", [2], "Köln"), day("2026-12-24", [2], "Köln", {"from": "Köln", "to": "Aachen"})]}
+
+
+def test_when_no_answer_passes_the_one_with_fewest_problems_is_kept():
+    claude = PretendClaude(WORSE, WRONG_BED, WORSE, '{"days": "unreadable"}')
+    planned = plan_trip(REQUEST, MARKETS, LINKS, client=claude)
+    assert [len(problems) for problems in planned.rounds] == [3, 1, 3, 1]
+    assert planned.result.problems == ["Thu 24 Dec: the night must be spent in Aachen, where the day ends, not Köln."]
+    assert planned.plan.days[0].visits[0].market_id == 1  # WRONG_BED, not a later, worse answer
+
 def test_the_answer_format_allows_only_our_cities_and_markets():
     schema = plan_schema([1, 2])
     day_schema = schema["properties"]["days"]["items"]

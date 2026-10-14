@@ -133,8 +133,9 @@ def plan_message(request: TripRequest, markets: dict[int, MarketInfo], links: Li
 
 @dataclass
 class Planned:
-    """The planner's last plan (None if none could be read), its check, and the problems the
-    checker found in each answer, in order (the last list is empty when the plan passed)."""
+    """The planner's best plan (the one with the fewest problems; None if none could be read),
+    its check, and the problems the checker found in each answer, in order (the last list is
+    empty when the plan passed)."""
     plan: Plan | None
     result: CheckResult
     rounds: list[list[str]]
@@ -147,11 +148,11 @@ class Planned:
 def plan_trip(request: TripRequest, markets: dict[int, MarketInfo], links: Links,
               client=None, model: str = PLANNER_MODEL) -> Planned:
     """Draft a plan, check it, and send the problems back for fixing, at most MAX_FIX_ROUNDS times.
-    The last plan is returned with any problems left."""
+    If no answer passes, the one with the fewest problems is returned (a later one on a tie)."""
     client = client or anthropic.Anthropic()
     messages = [{"role": "user", "content": plan_message(request, markets, links)}]
     schema = plan_schema(sorted(markets))
-    plan, result, rounds = None, CheckResult(), []
+    best, result, rounds = None, CheckResult(), []  # best: (plan, its check)
     for _ in range(MAX_FIX_ROUNDS + 1):
         response = client.messages.create(
             model=model, max_tokens=8000, system=PLANNER_PROMPT.read_text(encoding="utf-8"),
@@ -163,12 +164,14 @@ def plan_trip(request: TripRequest, markets: dict[int, MarketInfo], links: Links
         if isinstance(parsed, str):
             result = CheckResult(problems=[parsed])
         else:
-            plan, result = parsed, check(parsed, request, markets, links)
+            result = check(parsed, request, markets, links)
+            if best is None or len(result.problems) <= len(best[1].problems):
+                best = (parsed, result)
         rounds.append(list(result.problems))
         if not result.problems:
-            return Planned(plan, result, rounds)
+            return Planned(parsed, result, rounds)
         messages.append({"role": "assistant", "content": reply})
         messages.append({"role": "user", "content":
             "The checker found these problems. Fix every one and change as little else as possible:\n"
             + "\n".join(f"- {problem}" for problem in result.problems)})
-    return Planned(plan, result, rounds)
+    return Planned(*best, rounds) if best else Planned(None, result, rounds)
