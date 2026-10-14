@@ -23,13 +23,21 @@ class Travel:
 
 
 @dataclass(frozen=True)
+class Visit:
+    """A market visited on a day, with the planner's short reason for choosing it (from the
+    market's checked details and tags, linked to the user's wishes)."""
+    market_id: int
+    why: str = ""
+
+
+@dataclass(frozen=True)
 class Day:
     """One day of the trip: the travel (if any), the markets visited (by id), and the city
     slept in that night. With travel, the markets are in the city travelled to. A day trip
     (only when Settings.day_trips is on) also has travel_back, from that city to sleep_in."""
     day: date
     travel: Travel | None
-    visits: tuple[int, ...]
+    visits: tuple[Visit, ...]
     sleep_in: str
     travel_back: Travel | None = None
 
@@ -38,3 +46,16 @@ class Day:
 class Plan:
     """An itinerary: one Day per date of the trip, in order."""
     days: tuple[Day, ...]
+
+
+@dataclass(frozen=True)
+class TripRequest:
+    """What the user asked for: the dates, their settings, their wishes in their own words,
+    the tags they picked, and optionally where the trip must start and end."""
+    first_day: date
+    last_day: date
+    settings: Settings = Settings()
+    wishes: str = ""
+    tags: tuple[str, ...] = ()
+    start_city: str | None = None  # the first day starts here (e.g. where the user arrives)
+    end_city: str | None = None  # the last night is spent here

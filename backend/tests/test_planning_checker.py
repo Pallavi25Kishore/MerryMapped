@@ -1,7 +1,7 @@
 from datetime import date
 
 from app.planning.checker import MarketInfo, check
-from app.planning.plan import Day, Plan, Settings, Travel
+from app.planning.plan import Day, Plan, Settings, Travel, TripRequest, Visit
 
 D1, D2 = date(2026, 12, 15), date(2026, 12, 16)  # Tuesday, Wednesday
 
@@ -36,12 +36,16 @@ def plan(*days):
     return Plan(tuple(days))
 
 
-GOOD = plan(Day(D1, None, (1, 2), "Köln"),
-            Day(D2, Travel("Köln", "Aachen"), (3,), "Aachen"))
+def visits(*market_ids):
+    return tuple(Visit(market_id, "why") for market_id in market_ids)
 
 
-def run(p, settings=Settings(), markets=MARKETS):
-    return check(p, D1, D2, settings, markets, LINKS)
+GOOD = plan(Day(D1, None, visits(1, 2), "Köln"),
+            Day(D2, Travel("Köln", "Aachen"), visits(3), "Aachen"))
+
+
+def run(p, settings=Settings(), markets=MARKETS, **request):
+    return check(p, TripRequest(D1, D2, settings, **request), markets, LINKS)
 
 
 def test_a_good_plan_has_no_problems_and_gets_its_trains():
@@ -58,34 +62,34 @@ def test_every_date_exactly_once():
 
 
 def test_days_must_connect():
-    p = plan(GOOD.days[0], Day(D2, Travel("Aachen", "Köln"), (1,), "Köln"))
+    p = plan(GOOD.days[0], Day(D2, Travel("Aachen", "Köln"), visits(1), "Köln"))
     assert run(p).problems == ["Wed 16 Dec: the travel leaves from Aachen, but the night before was in Köln."]
 
 
 def test_sleep_where_the_day_ends():
-    p = plan(GOOD.days[0], Day(D2, Travel("Köln", "Aachen"), (3,), "Köln"))
+    p = plan(GOOD.days[0], Day(D2, Travel("Köln", "Aachen"), visits(3), "Köln"))
     assert run(p).problems == ["Wed 16 Dec: the night must be spent in Aachen, where the day ends, not Köln."]
 
 
 def test_only_our_cities_and_markets():
-    p = plan(Day(D1, None, (99,), "Köln"), Day(D2, None, (), "Paris"))
+    p = plan(Day(D1, None, visits(99), "Köln"), Day(D2, None, visits(), "Paris"))
     assert run(p).problems == ["Tue 15 Dec: market 99 is not one of our markets.",
                                "Wed 16 Dec: 'Paris' is not one of our cities ("
                                "Köln, Aachen, Nürnberg, Rothenburg ob der Tauber, Dresden, Strasbourg, Colmar, Brussels, Brugge)."]
 
 
 def test_market_in_another_city():
-    p = plan(Day(D1, None, (3,), "Köln"), Day(D2, None, (), "Köln"))
+    p = plan(Day(D1, None, visits(3), "Köln"), Day(D2, None, visits(), "Köln"))
     assert run(p).problems == ["Tue 15 Dec: Aachen market is in Aachen, but the day is spent in Köln."]
 
 
 def test_market_closed_that_day():
-    p = plan(GOOD.days[0], Day(D2, Travel("Köln", "Aachen"), (4,), "Aachen"))
+    p = plan(GOOD.days[0], Day(D2, Travel("Köln", "Aachen"), visits(4), "Aachen"))
     assert run(p).problems == ["Wed 16 Dec: Short season is closed: it is only open from 20 Nov to 15 Dec."]
 
 
 def test_too_many_markets():
-    p = plan(Day(D1, None, (1, 2), "Köln"), GOOD.days[1])
+    p = plan(Day(D1, None, visits(1, 2), "Köln"), GOOD.days[1])
     assert run(p, Settings(max_markets_per_day=1)).problems == ["Tue 15 Dec: 2 markets is more than 1 in one day."]
 
 
@@ -111,7 +115,7 @@ def test_no_train_within_the_settings():
                         "and takes at most 6 h 00 min."]
 
 
-DAY_TRIP = plan(GOOD.days[0], Day(D2, Travel("Köln", "Aachen"), (3,), "Köln", travel_back=Travel("Aachen", "Köln")))
+DAY_TRIP = plan(GOOD.days[0], Day(D2, Travel("Köln", "Aachen"), visits(3), "Köln", travel_back=Travel("Aachen", "Köln")))
 
 
 def test_day_trips_are_off_by_default():
@@ -122,3 +126,10 @@ def test_a_day_trip_when_allowed_gets_a_train_back_after_the_market():
     result = run(DAY_TRIP, Settings(day_trips=True))
     assert result.problems == []
     assert result.trains[(D2, "back")].depart == 1230  # 20:30, after the market (08:48 + 2 h)
+
+
+def test_start_and_end_cities_when_asked():
+    assert run(GOOD, start_city="Köln", end_city="Aachen").problems == []
+    assert run(GOOD, start_city="Aachen", end_city="Köln").problems == [
+        "Tue 15 Dec: the trip must start in Aachen, not Köln.",
+        "Wed 16 Dec: the last night must be in Köln, not Aachen."]

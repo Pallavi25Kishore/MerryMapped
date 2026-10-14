@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import Fact, Market
 from app.planning.opening import open_window
-from app.planning.plan import Day, Plan, Settings
+from app.planning.plan import Day, Plan, Settings, TripRequest
 from app.planning.trains import Links, Train, pick_train
 from app.trains.stations import STATIONS
 
@@ -37,10 +37,11 @@ def hhmm(minutes: int) -> str:
     return f"{minutes // 60 % 24:02}:{minutes % 60:02}"
 
 
-def check(plan: Plan, first_day: date, last_day: date, settings: Settings,
-          markets: dict[int, MarketInfo], links: Links) -> CheckResult:
-    """Hold the plan to the hard rules: every date once, days that connect, only our markets,
-    each market open with enough time, a train for every travel within the settings."""
+def check(plan: Plan, request: TripRequest, markets: dict[int, MarketInfo], links: Links) -> CheckResult:
+    """Hold the plan to the hard rules: every date once, days that connect, the start and end
+    cities asked for, only our markets, each market open with enough time, a train for every
+    travel within the settings."""
+    first_day, last_day, settings = request.first_day, request.last_day, request.settings
     result = CheckResult()
     wanted = [first_day + timedelta(days=n) for n in range((last_day - first_day).days + 1)]
     got = [day.day for day in plan.days]
@@ -48,6 +49,14 @@ def check(plan: Plan, first_day: date, last_day: date, settings: Settings,
         result.problems.append(f"The plan must have exactly one day for each date from {first_day:%a %d %b} "
                                f"to {last_day:%a %d %b}, in order; it has {', '.join(f'{d:%d %b}' for d in got)}.")
         return result
+
+    first = plan.days[0]
+    starts_in = first.travel.from_city if first.travel else first.sleep_in
+    if request.start_city and starts_in != request.start_city:
+        result.problems.append(f"{first.day:%a %d %b}: the trip must start in {request.start_city}, not {starts_in}.")
+    if request.end_city and plan.days[-1].sleep_in != request.end_city:
+        result.problems.append(f"{last_day:%a %d %b}: the last night must be in {request.end_city}, "
+                               f"not {plan.days[-1].sleep_in}.")
 
     city = None  # where the traveller wakes up; None before the first day
     for day in plan.days:
@@ -99,7 +108,8 @@ def check_day(day: Day, city: str | None, settings: Settings, markets: dict[int,
     # The markets, one after the other, each for at least min_market_minutes while open.
     if len(day.visits) > settings.max_markets_per_day:
         problem(f"{len(day.visits)} markets is more than {settings.max_markets_per_day} in one day.")
-    for market_id in day.visits:
+    for visit in day.visits:
+        market_id = visit.market_id
         market = markets.get(market_id)
         if market is None:
             problem(f"market {market_id} is not one of our markets.")
