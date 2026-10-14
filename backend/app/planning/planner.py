@@ -9,6 +9,7 @@ import anthropic
 from app.planning.checker import CheckResult, MarketInfo, check, hhmm
 from app.planning.opening import open_window
 from app.planning.plan import Day, Plan, Settings, Travel, TripRequest, Visit
+from app.planning.repair import Repaired, repair
 from app.planning.trains import Links, Train, pick_train
 from app.reading.market_reader import TAGS
 from app.settings import PLANNER_MODEL
@@ -135,10 +136,12 @@ def plan_message(request: TripRequest, markets: dict[int, MarketInfo], links: Li
 class Planned:
     """The planner's best plan (the one with the fewest problems; None if none could be read),
     its check, and the problems the checker found in each answer, in order (the last list is
-    empty when the plan passed)."""
+    empty when the plan passed). When problems are left, repaired holds the best plan with only
+    what is broken removed, and tips."""
     plan: Plan | None
     result: CheckResult
     rounds: list[list[str]]
+    repaired: Repaired | None = None
 
     @property
     def answers(self) -> int:
@@ -148,7 +151,8 @@ class Planned:
 def plan_trip(request: TripRequest, markets: dict[int, MarketInfo], links: Links,
               client=None, model: str = PLANNER_MODEL) -> Planned:
     """Draft a plan, check it, and send the problems back for fixing, at most MAX_FIX_ROUNDS times.
-    If no answer passes, the one with the fewest problems is returned (a later one on a tie)."""
+    If no answer passes, the one with the fewest problems is returned (a later one on a tie),
+    with its repair."""
     client = client or anthropic.Anthropic()
     messages = [{"role": "user", "content": plan_message(request, markets, links)}]
     schema = plan_schema(sorted(markets))
@@ -174,4 +178,6 @@ def plan_trip(request: TripRequest, markets: dict[int, MarketInfo], links: Links
         messages.append({"role": "user", "content":
             "The checker found these problems. Fix every one and change as little else as possible:\n"
             + "\n".join(f"- {problem}" for problem in result.problems)})
-    return Planned(*best, rounds) if best else Planned(None, result, rounds)
+    if best is None:
+        return Planned(None, result, rounds)
+    return Planned(*best, rounds, repair(best[0], request, markets, links))

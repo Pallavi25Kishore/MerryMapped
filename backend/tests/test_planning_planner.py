@@ -121,6 +121,22 @@ def test_gives_up_after_the_fixing_rounds_and_returns_the_problems():
     planned = plan_trip(REQUEST, MARKETS, LINKS, client=claude)
     assert planned.answers == MAX_FIX_ROUNDS + 1
     assert planned.result.problems and planned.plan is not None
+    assert planned.repaired.result.problems == planned.result.problems  # a wrong bed: no market to remove
+
+
+REPEAT = {"days": [day("2026-12-23", [1], "Köln"), day("2026-12-24", [2, 2], "Aachen", {"from": "Köln", "to": "Aachen"})]}
+
+
+def test_a_plan_left_with_problems_comes_with_its_repair():
+    planned = plan_trip(REQUEST, MARKETS, LINKS, client=PretendClaude(*[REPEAT] * (MAX_FIX_ROUNDS + 1)))
+    assert planned.result.problems
+    assert planned.repaired.result.problems == []
+    assert [[v.market_id for v in d.visits] for d in planned.repaired.plan.days] == [[1], [2]]
+    assert "never visit a market twice" in planned.repaired.removed[0].reason
+
+
+def test_a_plan_that_passes_needs_no_repair():
+    assert plan_trip(REQUEST, MARKETS, LINKS, client=PretendClaude(GOOD)).repaired is None
 
 
 
