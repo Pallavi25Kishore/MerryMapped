@@ -1,15 +1,17 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import CityPicker from "@/components/CityPicker";
 import ConfirmView from "@/components/ConfirmView";
 import DatePicker from "@/components/DatePicker";
 import { HOME_EVENT } from "@/components/Header";
 import PaceSettings from "@/components/PaceSettings";
+import PlanningWait from "@/components/PlanningWait";
 import TicketButton from "@/components/TicketButton";
 import { castMagic } from "@/lib/magic";
 import { play } from "@/lib/sound";
-import { ApiError, getOptions, setAccessCode, understand, type Options, type Settings, type TripForm,
+import { ApiError, getOptions, plan, setAccessCode, understand, type Options, type Settings, type TripForm,
          type Understood } from "@/lib/api";
 
 // The trip form inside the planning panel. It first loads what the form needs from the backend
@@ -24,10 +26,11 @@ type Load = { state: "loading" } | { state: "code"; wrong: boolean } | { state: 
 
 type Props = {
   onBack: () => void;
-  onPlan?: (understood: Understood) => void; // Plan my trip (planning comes next)
+  onWaiting?: (waiting: boolean) => void; // the planning wait shows without the panel's box
 };
 
-export default function PlanForm({ onBack, onPlan }: Props) {
+export default function PlanForm({ onBack, onWaiting }: Props) {
+  const router = useRouter();
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const [attempt, setAttempt] = useState(0); // bumped to load again
   const [form, setForm] = useState<TripForm>({});
@@ -35,6 +38,8 @@ export default function PlanForm({ onBack, onPlan }: Props) {
   const [problem, setProblem] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<Understood | null>(null);
   const [nudge, setNudge] = useState(false); // the "pick your dates" pop-up is showing
+  const [planning, setPlanning] = useState<"waiting" | "failed" | null>(null);
+  useEffect(() => onWaiting?.(planning === "waiting"), [planning, onWaiting]);
   const when = useRef<HTMLElement>(null);
 
   // Home in the header: next time the planner opens, it starts at the form (entries kept).
@@ -77,6 +82,31 @@ export default function PlanForm({ onBack, onPlan }: Props) {
       .finally(() => setReading(false));
   };
 
+  // Plan my trip: plan, check and save the trip, then open its own page.
+  const planTrip = (event: React.MouseEvent<HTMLButtonElement>, understood: Understood) => {
+    if (!understood.request) return;
+    castMagic(event.currentTarget);
+    play("magic");
+    setPlanning("waiting");
+    plan({ ...understood.request, not_covered: understood.not_covered })
+      .then((trip) => {
+        play("chime");
+        // Next.js keeps this page in memory: reset it first, so Home later shows the welcome view.
+        setPlanning(null);
+        setConfirm(null);
+        onBack();
+        router.push(`/trips/${encodeURIComponent(trip.trip_id)}`);
+      })
+      .catch((error) => {
+        if (error instanceof ApiError && error.needsAccessCode) {
+          setPlanning(null);
+          setLoad({ state: "code", wrong: true });
+        } else {
+          setPlanning("failed");
+        }
+      });
+  };
+
   useEffect(() => {
     let current = true;
     getOptions()
@@ -102,14 +132,17 @@ export default function PlanForm({ onBack, onPlan }: Props) {
   };
 
   const back = <TicketButton kind="quiet" onClick={onBack}>Back</TicketButton>;
+  // The panel's title: shown with the form, not on the review card or the planning wait (they have their own).
+  const title = <h2 className="font-display text-3xl font-semibold">Plan your trip</h2>;
 
   if (load.state === "loading") {
-    return <><p className="mt-6 text-frost">Preparing your planner…</p><div className="mt-8">{back}</div></>;
+    return <>{title}<p className="mt-6 text-frost">Preparing your planner…</p><div className="mt-8">{back}</div></>;
   }
   if (load.state === "error") {
     return (
-      <div className="mt-6">
-        <p className="text-snow/85">
+      <div>
+        {title}
+        <p className="mt-6 text-snow/85">
           {load.outdated ? "The backend is running older code. Please restart it, then try again."
                          : "The planner can't be reached right now. Is the backend running?"}
         </p>
@@ -123,6 +156,7 @@ export default function PlanForm({ onBack, onPlan }: Props) {
   if (load.state === "code") {
     return (
       <>
+        {title}
         <AccessCode wrong={load.wrong} onEnter={(code) => { setAccessCode(code); retry(); }} />
         <div className="mt-8">{back}</div>
       </>
@@ -130,73 +164,90 @@ export default function PlanForm({ onBack, onPlan }: Props) {
   }
 
   const { options } = load;
+  if (planning === "waiting") return <PlanningWait />;
+  if (planning === "failed") {
+    return (
+      <div className="rise-in mt-6 text-center">
+        <p className="text-snow/85">
+          The elves couldn&apos;t finish your plan this time. Please try again: it usually works on a second go.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <TicketButton kind="quiet" onClick={() => setPlanning(null)}>Back</TicketButton>
+          <TicketButton onClick={(event) => confirm && planTrip(event, confirm)}>Try again</TicketButton>
+        </div>
+      </div>
+    );
+  }
   if (confirm) {
     const defaults = Object.fromEntries(Object.entries(options.settings).map(([key, range]) => [key, range.default]));
     return <ConfirmView understood={confirm} form={form} defaults={defaults as Settings} places={options.places}
-                        onEdit={() => setConfirm(null)} onPlan={() => onPlan?.(confirm)} />;
+                        onEdit={() => setConfirm(null)} onPlan={(event) => planTrip(event, confirm)} />;
   }
   const text = form.text ?? "";
   return (
-    <div className="mt-6 text-left">
-      {/* One column, about 592 px wide. On wide screens, two such columns side by side (same sizes as one
-          column): the text-like parts on the left, the map on the right. */}
-      <div className="grid gap-8 xl:grid-cols-2 xl:gap-12">
-        <div className="space-y-8">
-          <section ref={when} className={`relative transition duration-500 ${nudge ? "glow-pulse" : ""}`}>
-            <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">
-              When <span className="normal-case tracking-normal text-frost">· required</span>
-            </h3>
-            {/* Shown here, where the eye lands after the scroll, when See my plan is pressed without dates. */}
-            {nudge && (
-              <div role="status" className="rise-in absolute -top-2.5 right-0 z-10 whitespace-nowrap border border-gold/50
-                                             bg-night-deep px-3 py-1.5 text-sm text-snow
-                                             shadow-[0_0_24px_rgb(244_195_90/0.3)]">
-                <span aria-hidden className="mr-2 text-gold">✦</span>
-                Pick your first and last day here to continue
-              </div>
-            )}
-            <DatePicker firstAllowed={options.first_day} lastAllowed={options.last_day}
-                        firstDay={form.first_day} lastDay={form.last_day}
-                        onChange={(first_day, last_day) => setForm((f) => ({ ...f, first_day, last_day }))} />
-          </section>
+    <div>
+      {title}
+      <div className="mt-6 text-left">
+        {/* One column, about 592 px wide. On wide screens, two such columns side by side (same sizes as one
+            column): the text-like parts on the left, the map on the right. */}
+        <div className="grid gap-8 xl:grid-cols-2 xl:gap-12">
+          <div className="space-y-8">
+            <section ref={when} className={`relative transition duration-500 ${nudge ? "glow-pulse" : ""}`}>
+              <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">
+                When <span className="normal-case tracking-normal text-frost">· required</span>
+              </h3>
+              {/* Shown here, where the eye lands after the scroll, when See my plan is pressed without dates. */}
+              {nudge && (
+                <div role="status" className="rise-in absolute -top-2.5 right-0 z-10 whitespace-nowrap border border-gold/50
+                                               bg-night-deep px-3 py-1.5 text-sm text-snow
+                                               shadow-[0_0_24px_rgb(244_195_90/0.3)]">
+                  <span aria-hidden className="mr-2 text-gold">✦</span>
+                  Pick your first and last day here to continue
+                </div>
+              )}
+              <DatePicker firstAllowed={options.first_day} lastAllowed={options.last_day}
+                          firstDay={form.first_day} lastDay={form.last_day}
+                          onChange={(first_day, last_day) => setForm((f) => ({ ...f, first_day, last_day }))} />
+            </section>
 
-          <section>
-            <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">Your pace</h3>
-            <PaceSettings ranges={options.settings} changed={form.settings ?? {}}
-                          onChange={(update) => setForm((f) => ({ ...f, settings: update(f.settings ?? {}) }))} />
+            <section>
+              <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">Your pace</h3>
+              <PaceSettings ranges={options.settings} changed={form.settings ?? {}}
+                            onChange={(update) => setForm((f) => ({ ...f, settings: update(f.settings ?? {}) }))} />
+            </section>
+          </div>
+
+          {/* Stretches to the left column's height; the map fills what is left under the tabs. */}
+          <section className="flex flex-col">
+            <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">Where</h3>
+            <div className="flex-1">
+              <CityPicker places={options.places} start={form.start_city} end={form.end_city}
+                          onChange={(start_city, end_city) => setForm((f) => ({ ...f, start_city, end_city }))} />
+            </div>
           </section>
         </div>
 
-        {/* Stretches to the left column's height; the map fills what is left under the tabs. */}
-        <section className="flex flex-col">
-          <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">Where</h3>
-          <div className="flex-1">
-            <CityPicker places={options.places} start={form.start_city} end={form.end_city}
-                        onChange={(start_city, end_city) => setForm((f) => ({ ...f, start_city, end_city }))} />
+        <section className="mt-8">
+          <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">Your wishes</h3>
+          <label htmlFor="wishes" className="sr-only">Your wishes</label>
+          <textarea id="wishes" rows={3} maxLength={MAX_TEXT} value={text}
+                    onChange={(event) => setForm((f) => ({ ...f, text: event.target.value }))}
+                    placeholder="Tell us what you'd love: old towns, mulled wine, not too touristy…"
+                    className="block w-full resize-y border border-snow/20 bg-night-deep/50 px-4 py-3 text-snow outline-none
+                               transition placeholder:text-snow/35 focus:border-gold" />
+          <div className="mt-2 flex justify-between gap-4 text-sm text-frost">
+            <span>Santa can&apos;t promise everything, but we&apos;ll fit in as many wishes as the trains allow.</span>
+            <span className="tabular-nums">{text.length} / {MAX_TEXT}</span>
           </div>
         </section>
-      </div>
 
-      <section className="mt-8">
-        <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">Your wishes</h3>
-        <label htmlFor="wishes" className="sr-only">Your wishes</label>
-        <textarea id="wishes" rows={3} maxLength={MAX_TEXT} value={text}
-                  onChange={(event) => setForm((f) => ({ ...f, text: event.target.value }))}
-                  placeholder="Tell us what you'd love: old towns, mulled wine, not too touristy…"
-                  className="block w-full resize-y border border-snow/20 bg-night-deep/50 px-4 py-3 text-snow outline-none
-                             transition placeholder:text-snow/35 focus:border-gold" />
-        <div className="mt-2 flex justify-between gap-4 text-sm text-frost">
-          <span>Santa can&apos;t promise everything, but we&apos;ll fit in as many wishes as the trains allow.</span>
-          <span className="tabular-nums">{text.length} / {MAX_TEXT}</span>
+        <div className="mt-8 flex flex-wrap items-center justify-end gap-3">
+          {problem && <span className="mr-2 text-sm text-frost" aria-live="polite">{problem}</span>}
+          {back}
+          <TicketButton disabled={reading} onClick={seeMyPlan}>
+            {reading ? "Reading your wishes…" : "See my plan"}
+          </TicketButton>
         </div>
-      </section>
-
-      <div className="mt-8 flex flex-wrap items-center justify-end gap-3">
-        {problem && <span className="mr-2 text-sm text-frost" aria-live="polite">{problem}</span>}
-        {back}
-        <TicketButton disabled={reading} onClick={seeMyPlan}>
-          {reading ? "Reading your wishes…" : "See my plan"}
-        </TicketButton>
       </div>
     </div>
   );

@@ -15,13 +15,17 @@ import { play } from "@/lib/sound";
 
 // Every move eases in and out gently, so the welcome dissolves into the planner.
 const GLIDE = "transition-all duration-[1400ms] ease-[cubic-bezier(0.45,0,0.25,1)] motion-reduce:transition-none";
+// The panel glides only its movement and fading: its box (border, background, width) changes at
+// once, so the planning scene never shows a box fading away.
+const PANEL_GLIDE = GLIDE.replace("transition-all", "transition-[transform,opacity]");
 const TIP_MS = 900; // how long Start planning takes to tip forward and vanish
 
 export default function HomeFlow() {
   const [planning, setPlanning] = useState(false);
   const [tipped, setTipped] = useState(false); // Start planning has tipped forward, edge-on
   const [opened, setOpened] = useState(false); // the form stays (with what was entered) once opened
-  const panelHeading = useRef<HTMLHeadingElement>(null);
+  const [waiting, setWaiting] = useState(false); // planning: the panel drops its box for the wide scene
+  const panel = useRef<HTMLElement>(null);
 
   const start = (event: React.MouseEvent<HTMLButtonElement>) => {
     const button = event.currentTarget;
@@ -55,7 +59,7 @@ export default function HomeFlow() {
 
   useEffect(() => {
     if (!planning) return;
-    panelHeading.current?.focus({ preventScroll: true }); // keyboard and screen-reader users land on the form
+    panel.current?.focus({ preventScroll: true }); // keyboard and screen-reader users land on the form
     const onKey = (event: KeyboardEvent) => event.key === "Escape" && back();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -86,14 +90,13 @@ export default function HomeFlow() {
       </div>
 
       {/* The trip form's panel: rises in from below. */}
-      <section aria-label="Plan your trip" inert={!planning}
-               className={`absolute inset-x-4 top-[18%] mx-auto max-h-[calc(82%-1rem)] max-w-2xl overflow-y-auto xl:max-w-[1312px] border border-snow/15 bg-night/55 p-8
-                           shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-10 ${GLIDE}
+      <section ref={panel} tabIndex={-1} aria-label="Plan your trip" inert={!planning}
+               className={`absolute top-[18%] mx-auto max-h-[calc(82%-1rem)] overflow-y-auto outline-none
+                           ${waiting ? "inset-x-0 max-w-none p-0"
+                                     : "inset-x-4 max-w-2xl border border-snow/15 bg-night/55 p-8 xl:max-w-[1312px]"}
+                           ${waiting ? "" : "shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-10"} ${PANEL_GLIDE}
                            ${planning ? "translate-y-0 opacity-100 delay-150" : "pointer-events-none translate-y-16 opacity-0"}`}>
-        <h2 ref={panelHeading} tabIndex={-1} className="font-display text-3xl font-semibold outline-none">
-          Plan your trip
-        </h2>
-        {opened && <PlanForm onBack={back} />}
+        {opened && <PlanForm onBack={back} onWaiting={setWaiting} />}
       </section>
     </main>
   );

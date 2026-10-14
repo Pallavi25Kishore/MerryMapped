@@ -67,6 +67,7 @@ export type ItineraryDay = {
   visits: Visit[];
   sleep_in: string;
   left_out: { market_id: number; name: string | null; reason: string; tip: string | null }[];
+  free_day: { city: string; reason: "closed" | "rest" } | null; // a day without markets: where, and why
   problem: string | null;
   tip: string | null;
 };
