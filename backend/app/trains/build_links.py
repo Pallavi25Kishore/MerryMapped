@@ -1,3 +1,4 @@
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 from itertools import permutations
 from pathlib import Path
@@ -17,20 +18,18 @@ from app.trains.stations import STATIONS
 TRIP_DAYS = [date(2026, 12, 15) + timedelta(days=n) for n in range(17)]  # 15-31 December
 
 
-def coverage(gtfs_dir: Path = GTFS_DIR) -> tuple[date, date]:
-    """The days every downloaded feed covers: from the latest first day to the earliest last day."""
-    ranges = []
-    for feed in FEEDS:
-        days = date_range(gtfs_dir / feed.name)
-        if days is None:
-            raise SystemExit(f"No timetable for {feed.name}: run python -m app.trains.download first.")
-        ranges.append([datetime.strptime(day, "%Y%m%d").date() for day in days])
-    return max(first for first, _ in ranges), min(last for _, last in ranges)
+def coverage(feed_name: str, gtfs_dir: Path = GTFS_DIR) -> tuple[date, date]:
+    """The first and last day the downloaded feed covers."""
+    days = date_range(gtfs_dir / feed_name)
+    if days is None:
+        raise SystemExit(f"No timetable for {feed_name}: run python -m app.trains.download first.")
+    first, last = (datetime.strptime(day, "%Y%m%d").date() for day in days)
+    return first, last
 
 
 def day_to_read(day: date, covered: tuple[date, date]) -> tuple[date, str]:
-    """Which day's timetable to use, and whether that is the real one ("timetable") or the latest
-    covered day with the same weekday ("estimate")."""
+    """Which day of a feed to use: the day itself ("timetable") if the feed covers it, otherwise
+    the latest covered day with the same weekday ("estimate")."""
     first, last = covered
     if first <= day <= last:
         return day, "timetable"
@@ -40,26 +39,53 @@ def day_to_read(day: date, covered: tuple[date, date]) -> tuple[date, str]:
     return same_weekday, "estimate"
 
 
-def as_json(journey: Journey) -> list[dict]:
+@dataclass
+class DayRuns:
+    """All trains for one trip day. Feeds that don't cover the day lend the trains of their
+    latest same weekday, relabelled to the trip day so they connect with the real ones."""
+    runs: list[Run]
+    estimated_feeds: set[str]
+    based_on_day: date | None  # the day the lent trains come from
+
+
+def read_day(day: date, gtfs_dir: Path = GTFS_DIR) -> DayRuns:
+    runs, estimated, based_on = [], set(), None
+    for feed in FEEDS:
+        use_day, source = day_to_read(day, coverage(feed.name, gtfs_dir))
+        feed_runs = read_feed(gtfs_dir / feed.name, {use_day})
+        if source == "estimate":
+            estimated.add(feed.name)
+            based_on = use_day
+            feed_runs = [replace(run, day=day) for run in feed_runs]
+        runs += feed_runs
+    return DayRuns(runs, estimated, based_on)
+
+
+def as_json(journey: Journey, estimated_feeds: set[str]) -> list[dict]:
     return [{"from": leg.from_station, "to": leg.to_station, "depart": leg.depart,
-             "arrive": leg.arrive, "feed": leg.feed} for leg in journey.legs]
+             "arrive": leg.arrive, "feed": leg.feed, "estimate": leg.feed in estimated_feeds}
+            for leg in journey.legs]
 
 
-def link_row(from_city: str, to_city: str, day: date, found: list[Journey], source: str,
-             read_day: date, today: date) -> TrainLink:
-    """One train_links row: the journeys found and a short summary of them."""
+def link_row(from_city: str, to_city: str, day: date, found: list[Journey],
+             estimated_feeds: set[str], based_on_day: date | None, today: date) -> TrainLink:
+    """One train_links row: the journeys found and a short summary of them. The row is an
+    estimate if any of its journeys uses a lent train, or if none was found while some
+    trains were lent (then "no journey" is only an estimate too)."""
+    estimate = (any(leg.feed in estimated_feeds for journey in found for leg in journey.legs)
+                or (not found and bool(estimated_feeds)))
     return TrainLink(
         from_city=from_city,
         to_city=to_city,
         day=day,
-        journeys=[as_json(journey) for journey in found],
+        journeys=[as_json(journey, estimated_feeds) for journey in found],
         fastest_minutes=min((j.arrive - j.depart for j in found), default=None),
         fewest_changes=min((j.changes for j in found), default=None),
         trips_per_day=len(found),
         first_departure=min((j.depart for j in found), default=None),
         last_departure=max((j.depart for j in found), default=None),
-        source=source,
-        based_on_day=read_day if source == "estimate" else None,
+        source="estimate" if estimate else "timetable",
+        based_on_day=based_on_day if estimate else None,
         checked_on=today,
     )
 
@@ -73,33 +99,29 @@ def replace_links(session: Session, day: date, rows: list[TrainLink]) -> None:
     session.add_all(rows)
 
 
-def read_all_feeds(day: date, gtfs_dir: Path = GTFS_DIR) -> list[Run]:
-    return [run for feed in FEEDS for run in read_feed(gtfs_dir / feed.name, {day})]
-
-
 def main() -> None:
-    covered = coverage()
-    print(f"Every feed covers {covered[0]} to {covered[1]}.")
+    for feed in FEEDS:
+        first, last = coverage(feed.name)
+        print(f"{feed.name} covers {first} to {last}.")
     engine = make_engine()
     create_tables(engine)
     today = date.today()
-    found_for = {}  # (day read, from city, to city) -> journeys: estimates share a day read
     for day in TRIP_DAYS:
-        read_day, source = day_to_read(day, covered)
-        runs = None
-        rows = []
-        for from_city, to_city in permutations(STATIONS, 2):
-            key = (read_day, from_city, to_city)
-            if key not in found_for:
-                runs = runs if runs is not None else read_all_feeds(read_day)
-                found_for[key] = journeys(runs, set(STATIONS[from_city]), set(STATIONS[to_city]))
-            rows.append(link_row(from_city, to_city, day, found_for[key], source, read_day, today))
+        trains = read_day(day)
+        rows = [link_row(from_city, to_city, day,
+                         journeys(trains.runs, set(STATIONS[from_city]), set(STATIONS[to_city])),
+                         trains.estimated_feeds, trains.based_on_day, today)
+                for from_city, to_city in permutations(STATIONS, 2)]
+        # Read the rows before saving: once committed, their values are expired.
+        estimates = sum(row.source == "estimate" for row in rows)
+        none = [f"{row.from_city} -> {row.to_city}" for row in rows if row.trips_per_day == 0]
         with Session(engine) as session:
             replace_links(session, day, rows)
             session.commit()
-        none = [f"{row.from_city} -> {row.to_city}" for row in rows if row.trips_per_day == 0]
-        based = f" from {read_day:%a %d %b}" if source == "estimate" else ""
-        print(f"{day:%a %d %b}: {source}{based}, {len(rows)} pairs saved, no journey: {', '.join(none) or 'none'}")
+        lent = f" (lent by {', '.join(sorted(trains.estimated_feeds))} from {trains.based_on_day:%a %d %b})" \
+            if trains.estimated_feeds else ""
+        print(f"{day:%a %d %b}: {len(rows)} pairs saved, {estimates} estimates{lent}, "
+              f"no journey: {', '.join(none) or 'none'}")
 
 
 if __name__ == "__main__":
