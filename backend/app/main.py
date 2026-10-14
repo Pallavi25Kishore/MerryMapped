@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.connection import make_engine
-from app.db.models import Trip, create_tables
+from app.db.models import Fact, Market, Trip, create_tables
 from app.planning.checker import load_markets
 from app.planning.itinerary import build_itinerary
 from app.planning.plan import Settings, TripRequest
@@ -18,6 +18,8 @@ from app.planning.planner import plan_trip, trip_days
 from app.planning.trains import load_links
 from app.planning.understand import FIRST_DAY, LAST_DAY, SETTING_RANGES, Form, merge, understand
 from app.planning.wishes import review_wishes
+from app.rules.engine import site_of
+from app.rules.site_review import load_review
 from app.trains.stations import STATIONS
 
 app = FastAPI(title="MerryMapped")
@@ -187,6 +189,31 @@ def delete_trip(trip_id: str, session: Session = Depends(get_session)):
     return {"trip_id": trip_id, "planned_at": planned,
             "deleted_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),  # UTC
             "deleted": "the trip's request and itinerary", "kept": "nothing"}
+
+
+
+@api.get("/markets/{market_id}/sources")
+def market_sources(market_id: int, session: Session = Depends(get_session)):
+    """"Why can I see this?": every fact we show for a market with its proof (the page, the quote
+    and its English, the date checked, and whether it was checked from the page or entered by
+    hand), and the legal decision for each site the facts come from (the approved site review)."""
+    market = session.get(Market, market_id)
+    if market is None:
+        raise HTTPException(status_code=404, detail="No market with this id.")
+    facts = session.scalars(select(Fact).where(Fact.market_id == market_id).order_by(Fact.id)).all()
+    sites = dict.fromkeys([site_of(market.website)] + [site_of(fact.source_url) for fact in facts])
+    legal = {}
+    for site in sites:
+        review = load_review(site)
+        legal[site] = review and {
+            "reviewed_on": review.reviewed_on.isoformat(), "terms_pages": [str(url) for url in review.terms_urls],
+            "automated_access": review.automated_access.model_dump(),
+            "purposes": {name: answer.model_dump() for name, answer in review.purposes if answer}}
+    return {"market_id": market.id, "name": market.name, "website": market.website,
+            "facts": [{"kind": f.kind, "value": f.value, "page": f.source_url, "quote": f.evidence_quote,
+                       "english": f.evidence_translation, "checked_on": f.checked_on.isoformat(),
+                       "status": f.status} for f in facts],
+            "legal": legal}
 
 
 app.include_router(api)  # after every /api address is defined
