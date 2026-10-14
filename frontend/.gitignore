@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# licensed pictures: the licence forbids making the files available for download (public repo)
+/public/backgrounds/
