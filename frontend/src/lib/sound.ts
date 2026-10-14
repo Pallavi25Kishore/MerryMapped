@@ -131,7 +131,13 @@ function magic(ctx: AudioContext): void {
   [3136, 4186, 5274].forEach((pitch, i) => bell(ctx, 1.0 + i * 0.09, pitch, 0.18, 0.9, output(ctx, true, (i - 1) * 0.4)));
 }
 
-const SOUNDS = { chime, magic };
+// Something revealed (a market's story in the description box): a soft little sparkle of three high
+// bells, in the hall echo.
+function reveal(ctx: AudioContext): void {
+  [2637, 3136, 3951].forEach((pitch, i) => bell(ctx, i * 0.07, pitch, 0.18, 0.5, output(ctx, true, (i - 1) * 0.3)));
+}
+
+const SOUNDS = { chime, magic, reveal };
 export type SoundName = keyof typeof SOUNDS;
 
 // Play a sound. Every sound goes through here, and plays only when the bell is on.

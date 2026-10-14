@@ -78,3 +78,24 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .twinkle { animation: none; }
 }
+
+/* Fresh snow settled along the top edge (advent doors and the day inside). */
+.snow-cap::before {
+  content: "";
+  position: absolute;
+  inset: -5px 0 auto 0;
+  height: 10px;
+  background:
+    radial-gradient(circle at 6px 9px, var(--snow) 5px, transparent 5.5px) 0 0 / 12px 10px repeat-x,
+    linear-gradient(var(--snow), var(--snow)) 0 5px / 100% 4px no-repeat;
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+/* The one frosted panel used everywhere (the planner, the itinerary, the description box, the map),
+   so every box on the site has the same see-through teal and blur. */
+.panel {
+  border: 1px solid rgb(247 244 236 / 0.15);
+  background-color: rgb(13 50 61 / 0.55);
+  backdrop-filter: blur(24px);
+}

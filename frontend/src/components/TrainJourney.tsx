@@ -1,5 +1,5 @@
 import type { Train, Travel } from "@/lib/api";
-import { hours, railway, toMinutes } from "@/lib/words";
+import { hours, railway, stationName, toMinutes } from "@/lib/words";
 
 // One day's train journey: a summary (times, total length, direct or how many changes), then each
 // leg with its stations, times, length and railway, and each change with its wait. A gentle note
@@ -24,17 +24,21 @@ export default function TrainJourney({ travel }: { travel: Travel }) {
         <span className="text-gold">{train.arrive}</span> {travel.to}
         <span className="text-frost"> · {hours(total)} · {changes(train)}</span>
       </p>
-      <ol className="mt-2 space-y-1 border-l border-gold/30 pl-4 text-sm text-snow/85">
+      <ol className="mt-1.5 space-y-0.5 text-xs italic text-frost/90">
         {train.legs.map((leg, i) => {
           const next = train.legs[i + 1];
           const wait = next ? (toMinutes(next.depart) - toMinutes(leg.arrive) + 1440) % 1440 : 0;
           return (
             <li key={`${leg.from}-${leg.depart}`}>
-              <span className="tabular-nums">{leg.depart}</span> {leg.from}
-              <span aria-hidden className="mx-1.5 text-frost">→</span>
-              <span className="tabular-nums">{leg.arrive}</span> {leg.to}
-              <span className="text-frost"> · {hours(leg.minutes)}{railway(leg.railway) ? ` · ${railway(leg.railway)}` : ""}</span>
-              {next && <span className="mt-1 block italic text-frost">Change at {leg.to} · {hours(wait)}</span>}
+              <span className="tabular-nums">{leg.depart}</span> {stationName(leg.from)}
+              <span aria-hidden className="mx-1">→</span>
+              <span className="tabular-nums">{leg.arrive}</span> {stationName(leg.to)}
+              <span>
+                {/* Worked out from the times, so trips saved before legs carried their length show it too. */}
+                {" "}· {hours((toMinutes(leg.arrive) - toMinutes(leg.depart) + 1440) % 1440)}
+                {railway(leg.railway) ? ` · ${railway(leg.railway)}` : ""}
+              </span>
+              {next && <span className="block pl-3 text-gold/70">change at {stationName(leg.to)} · {hours(wait)}</span>}
             </li>
           );
         })}

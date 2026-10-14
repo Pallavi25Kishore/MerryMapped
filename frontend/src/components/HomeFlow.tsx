@@ -93,8 +93,8 @@ export default function HomeFlow() {
       <section ref={panel} tabIndex={-1} aria-label="Plan your trip" inert={!planning}
                className={`absolute top-[18%] mx-auto max-h-[calc(82%-1rem)] overflow-y-auto outline-none
                            ${waiting ? "inset-x-0 max-w-none p-0"
-                                     : "inset-x-4 max-w-2xl border border-snow/15 bg-night/55 p-8 xl:max-w-[1312px]"}
-                           ${waiting ? "" : "shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-10"} ${PANEL_GLIDE}
+                                     : "panel inset-x-4 max-w-2xl p-8 xl:max-w-[1312px]"}
+                           ${waiting ? "" : "shadow-2xl shadow-black/40 sm:p-10"} ${PANEL_GLIDE}
                            ${planning ? "translate-y-0 opacity-100 delay-150" : "pointer-events-none translate-y-16 opacity-0"}`}>
         {opened && <PlanForm onBack={back} onWaiting={setWaiting} />}
       </section>

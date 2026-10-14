@@ -2,15 +2,18 @@
 
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
+import MarketDetails from "@/components/MarketDetails";
+import TripTimeline, { type Chosen } from "@/components/TripTimeline";
 import { longDate } from "@/components/DatePicker";
 import StringLights from "@/components/StringLights";
-import TrainJourney from "@/components/TrainJourney";
 import { ApiError, openTrip, type Itinerary, type Trip } from "@/lib/api";
+import { play } from "@/lib/sound";
 import { numberWord } from "@/lib/words";
 
 // A saved trip, loaded in the browser (it needs the access code): string lights across the top, a
-// headline, the map's place on the left (staying in view) and the days on the right. The advent
-// doors, the holiday map and the wish review come next.
+// headline, the whole itinerary flowing down the left, and on the right (staying in view) the map's
+// place and one description box for the chosen market. On phones the description slides up from the
+// bottom. The holiday map and the wish review come next.
 
 // "Ten days of Christmas markets, from Köln to Dresden".
 function headline(itinerary: Itinerary): string {
@@ -25,11 +28,19 @@ type Load = { state: "loading" } | { state: "missing" } | { state: "error" } | {
 export default function TripView({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [load, setLoad] = useState<Load>({ state: "loading" });
+  const [chosen, setChosen] = useState<Chosen>(null); // the market in the description box
+  const [sheet, setSheet] = useState(false); // phones: the description slid up from the bottom
 
   useEffect(() => {
     let current = true;
     openTrip(id)
-      .then((trip) => current && setLoad({ state: "ready", trip }))
+      .then((trip) => {
+        if (!current) return;
+        setLoad({ state: "ready", trip });
+        // Start with the first market, so the description box is never empty.
+        const first = trip.itinerary.days.findIndex((day) => day.visits.length > 0);
+        if (first >= 0) setChosen({ day: first, market: 0 });
+      })
       .catch((error) => current && setLoad({ state: error instanceof ApiError && error.status === 404 ? "missing" : "error" }));
     return () => {
       current = false;
@@ -51,6 +62,14 @@ export default function TripView({ params }: { params: Promise<{ id: string }> }
 
   const { itinerary } = load.trip;
   const { days } = itinerary;
+  const visit = chosen ? days[chosen.day].visits[chosen.market] : undefined;
+  const when = chosen ? `Day ${chosen.day + 1} · ${longDate(days[chosen.day].date)}` : "";
+
+  function choose(day: number, market: number) {
+    if (chosen?.day !== day || chosen.market !== market) play("reveal");
+    setChosen({ day, market });
+    setSheet(true);
+  }
   return (
     <div className="w-full">
       <StringLights />
@@ -62,36 +81,31 @@ export default function TripView({ params }: { params: Promise<{ id: string }> }
         <p className="mt-3 text-lg text-gold">{longDate(days[0].date)} to {longDate(days[days.length - 1].date)}</p>
       </div>
 
-      <div className="mx-auto mt-10 grid max-w-[1312px] gap-8 px-4 xl:grid-cols-[5fr_7fr]">
-        {/* The holiday map comes here (piece 3); it stays in view while the days scroll. */}
-        <div className="hidden xl:block">
-          <div className="sticky top-6 flex aspect-[4/5] items-center justify-center border border-gold/20 bg-night/40
-                          text-frost backdrop-blur-sm">
-            Your holiday map is on its way
+      <div className="mx-auto mt-10 grid max-w-[1312px] gap-10 px-4 xl:grid-cols-[7fr_5fr]">
+        <TripTimeline days={days} chosen={chosen} onChoose={choose} />
+
+        {/* Staying in view: the map's place, and the description box. */}
+        <aside className="hidden xl:block">
+          {/* Scrolls inside itself when a long description is taller than the screen. */}
+          <div className="sticky top-6 max-h-[calc(100vh-3rem)] space-y-5 overflow-y-auto">
+            <div className="panel flex aspect-[4/3] items-center justify-center text-frost">
+              Your holiday map is on its way
+            </div>
+            {visit && <MarketDetails visit={visit} when={when} />}
+          </div>
+        </aside>
+      </div>
+
+      {/* Phones: the description slides up from the bottom. */}
+      {sheet && visit && (
+        <div className="fixed inset-x-0 bottom-0 z-40 max-h-[75vh] overflow-y-auto xl:hidden">
+          <div className="relative">
+            <button type="button" onClick={() => setSheet(false)} aria-label="Close"
+                    className="absolute right-3 top-3 z-10 px-2 py-1 text-frost hover:text-gold">✕</button>
+            <MarketDetails visit={visit} when={when} />
           </div>
         </div>
-
-        <div className="space-y-4">
-          {days.map((day, n) => (
-            <div key={day.date} className="border border-snow/15 bg-night/55 p-5 text-left backdrop-blur-md">
-              <div className="text-sm uppercase tracking-[0.25em] text-gold">
-                Day {n + 1} · {longDate(day.date)} · {day.sleep_in}
-              </div>
-              {day.travel && <div className="mt-3"><TrainJourney travel={day.travel} /></div>}
-              <ul className="mt-3 text-snow">
-                {day.visits.map((visit) => <li key={visit.market_id}>✦ {visit.name}</li>)}
-                {day.free_day && (
-                  <li>
-                    <span className="text-gold">Free day in {day.free_day.city}</span>
-                    <span className="italic text-snow/85"> · a lovely day for sightseeing.</span>
-                    {day.free_day.reason === "closed" && <span className="text-frost"> The Christmas market is closed today.</span>}
-                  </li>
-                )}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

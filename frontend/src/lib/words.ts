@@ -39,3 +39,26 @@ const RAILWAYS: Record<string, string> = {
 export function railway(feed: string | null): string | null {
   return feed ? RAILWAYS[feed] ?? null : null;
 }
+
+// Each station shown one way: the timetables spell some differently ("Bruxelles-Midi" and
+// "Bruxelles Midi"), add country tags ("Aachen Hbf (DE)") or squeeze brackets ("Frankfurt(Main)Hbf").
+const STATIONS: Record<string, string> = {
+  "Bruges": "Brugge",
+  "Bruxelles-Midi": "Brussels-Midi",
+  "Bruxelles Midi": "Brussels-Midi",
+  "Bruxelles-Nord": "Brussels-Nord",
+  "Aéroport Charles de Gaulle 2 TGV": "Paris CDG Airport",
+  "Frankfurt(M) Flughafen Fernbf": "Frankfurt Airport",
+  "Freiburg, Hauptbahnhof": "Freiburg Hbf",
+  "Hamburg-Harburg(S)": "Hamburg-Harburg",
+  "Lille-Europe": "Lille Europe",
+  "Marne-la-Vallée-Chessy": "Marne-la-Vallée Chessy",
+  "Neustadt(Aisch)Bahnhof": "Neustadt (Aisch)",
+  "Rotterdam-Centraal": "Rotterdam Centraal",
+  "Steinach(bei Rothenburg ob der Tauber)": "Steinach (near Rothenburg)",
+};
+
+export function stationName(raw: string): string {
+  const name = raw.replace(/ \((DE|LU|BE|FR|NL)\)$/, "");
+  return STATIONS[name] ?? name.replace(/(\S)\(/g, "$1 (").replace(/\)(\S)/g, ") $1");
+}

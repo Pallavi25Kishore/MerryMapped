@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// While the trip is planned (about half a minute): a wide winter scene across the screen. A small
-// gold train (a locomotive pulling a wagon with a gift and one with a tree) glides along a dotted
-// track past little trees, gift boxes and a market stall, under a star and faint snowflakes. A line
+// While the trip is planned (about half a minute): a wide winter scene across the screen. Little
+// trees, gift boxes and a market stall in white and gold stand along a dotted track, under a star and
+// faint snowflakes, and the one splash of red and green is the train gliding past (a red locomotive
+// pulling green wagons, with a red gift and a green tree). A line
 // below says what MerryMapped is doing; it describes the steps in general (the website can't see
 // the backend's progress).
 
@@ -32,7 +33,7 @@ const SCENERY: { at: number; kind: "tree" | "gift" | "stall"; size: number }[] =
 function Tree({ size }: { size: number }) {
   return (
     <g transform={`scale(${size})`} className="stroke-gold" fill="none" strokeWidth={1.6} strokeLinejoin="round">
-      <path d="M 0 -46 L 13 -24 L 7 -24 L 18 -6 L -18 -6 L -7 -24 L -13 -24 Z" className="fill-pine" />
+      <path d="M 0 -46 L 13 -24 L 7 -24 L 18 -6 L -18 -6 L -7 -24 L -13 -24 Z" className="fill-snow" />
       <path d="M 0 -6 V 0" />
       <path d="M 0 -54 l 2 4 4 0.5 -3 3 1 4 -4 -2 -4 2 1 -4 -3 -3 4 -0.5 z" className="fill-gold stroke-none" />
     </g>
@@ -42,7 +43,7 @@ function Tree({ size }: { size: number }) {
 function Gift({ size }: { size: number }) {
   return (
     <g transform={`scale(${size})`} strokeWidth={1.6} className="stroke-gold">
-      <rect x="-11" y="-18" width="22" height="18" className="fill-cranberry/80" />
+      <rect x="-11" y="-18" width="22" height="18" className="fill-snow" />
       <path d="M 0 -18 V 0 M -11 -10 H 11" fill="none" />
       <path d="M 0 -18 c -6 -8 -12 -2 0 0 c 6 -8 12 -2 0 0" fill="none" />
     </g>
@@ -52,9 +53,9 @@ function Gift({ size }: { size: number }) {
 function Stall() {
   return (
     <g strokeWidth={1.6} className="stroke-gold">
-      <path d="M -26 -30 L 0 -48 L 26 -30 Z" className="fill-cranberry/80" />
+      <path d="M -26 -30 L 0 -48 L 26 -30 Z" className="fill-snow" />
       <path d="M -13 -39 L 0 -30 M 13 -39 L 0 -30" fill="none" />
-      <rect x="-22" y="-30" width="44" height="30" className="fill-night-deep" />
+      <rect x="-22" y="-30" width="44" height="30" className="fill-snow/90" />
       <path d="M -22 -14 H 22" fill="none" />
       {[-15, -5, 5, 15].map((x) => <circle key={x} cx={x} cy={-26} r={1.8} className="fill-gold stroke-none" />)}
     </g>
@@ -64,7 +65,7 @@ function Stall() {
 function Car({ kind }: { kind: (typeof CARS)[number] }) {
   if (kind === "engine") {
     return (
-      <g transform="translate(-16 -20)" className="fill-gold">
+      <g transform="translate(-16 -20)" className="fill-cranberry stroke-gold" strokeWidth={1.2}>
         <rect x="0" y="8" width="26" height="12" rx="2" />
         <rect x="18" y="0" width="11" height="13" rx="1.5" />
         <rect x="4" y="2" width="5" height="7" />
@@ -75,11 +76,11 @@ function Car({ kind }: { kind: (typeof CARS)[number] }) {
   }
   return (
     <g transform="translate(-12 -16)">
-      <rect x="0" y="6" width="24" height="10" rx="1.5" className="fill-gold" />
+      <rect x="0" y="6" width="24" height="10" rx="1.5" className="fill-[#2f7d4f] stroke-gold" strokeWidth="1.2" />
       {kind === "gift"
         ? <><rect x="6" y="-4" width="12" height="10" className="fill-cranberry stroke-gold" strokeWidth="1.2" />
             <path d="M 12 -4 V 6" className="stroke-gold" strokeWidth="1.2" /></>
-        : <path d="M 12 -10 L 19 6 L 5 6 Z" className="fill-pine stroke-gold" strokeWidth="1.2" />}
+        : <path d="M 12 -10 L 19 6 L 5 6 Z" className="fill-[#2f7d4f] stroke-gold" strokeWidth="1.2" />}
       <circle cx="6" cy="18" r="3" className="fill-night stroke-gold" strokeWidth="1.5" />
       <circle cx="18" cy="18" r="3" className="fill-night stroke-gold" strokeWidth="1.5" />
     </g>

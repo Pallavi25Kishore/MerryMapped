@@ -22,6 +22,16 @@ function fromIso(text: string): Date {
   return new Date(year, month - 1, day);
 }
 
+// "15 Dec" (read as a calendar date, never shifted by time zones).
+export function shortDate(text: string): string {
+  return fromIso(text).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+// "Tuesday 15 December", for screen readers.
+export function fullDate(text: string): string {
+  return fromIso(text).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+}
+
 export function longDate(text: string): string {
   return fromIso(text).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 }
