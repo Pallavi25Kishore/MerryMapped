@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import MarketDetails from "@/components/MarketDetails";
+import TripMap from "@/components/TripMap";
 import TripTimeline, { type Chosen } from "@/components/TripTimeline";
 import { longDate } from "@/components/DatePicker";
 import StringLights from "@/components/StringLights";
-import { ApiError, openTrip, type Itinerary, type Trip } from "@/lib/api";
+import { ApiError, getOptions, openTrip, type Itinerary, type Place, type Trip } from "@/lib/api";
 import { play } from "@/lib/sound";
 import { numberWord } from "@/lib/words";
 
@@ -30,6 +31,11 @@ export default function TripView({ params }: { params: Promise<{ id: string }> }
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const [chosen, setChosen] = useState<Chosen>(null); // the market in the description box
   const [sheet, setSheet] = useState(false); // phones: the description slid up from the bottom
+  const [places, setPlaces] = useState<Place[] | null>(null); // the cities' positions, for the map
+
+  useEffect(() => {
+    getOptions().then((options) => setPlaces(options.places ?? null)).catch(() => setPlaces(null));
+  }, []);
 
   useEffect(() => {
     let current = true;
@@ -82,15 +88,18 @@ export default function TripView({ params }: { params: Promise<{ id: string }> }
       </div>
 
       <div className="mx-auto mt-10 grid max-w-[1312px] gap-10 px-4 xl:grid-cols-[7fr_5fr]">
-        <TripTimeline days={days} chosen={chosen} onChoose={choose} />
+        <div className="space-y-6">
+          {/* Phones and narrower screens: the map sits above the itinerary. */}
+          {places && <div className="xl:hidden"><TripMap days={days} places={places} chosenDay={chosen?.day ?? null} /></div>}
+          <TripTimeline days={days} chosen={chosen} onChoose={choose} />
+        </div>
 
         {/* Staying in view: the map's place, and the description box. */}
         <aside className="hidden xl:block">
           {/* Scrolls inside itself when a long description is taller than the screen. */}
           <div className="sticky top-6 max-h-[calc(100vh-3rem)] space-y-5 overflow-y-auto">
-            <div className="panel flex aspect-[4/3] items-center justify-center text-frost">
-              Your holiday map is on its way
-            </div>
+            {places ? <TripMap days={days} places={places} chosenDay={chosen?.day ?? null} />
+                    : <div className="panel aspect-[4/3]" />}
             {visit && <MarketDetails visit={visit} when={when} />}
           </div>
         </aside>
