@@ -22,3 +22,6 @@ FACT_VERIFIER_MODEL = "claude-sonnet-5-5"
 
 # The Claude model that drafts trip plans for the checker.
 PLANNER_MODEL = "claude-sonnet-5-5"
+
+# The Claude model that reads what the traveller typed into settings and wishes.
+REQUEST_READER_MODEL = "claude-sonnet-5-5"
