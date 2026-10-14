@@ -1,10 +1,16 @@
+"use client";
+
+import { useState } from "react";
+import WhyPanel from "@/components/WhyPanel";
 import type { Visit } from "@/lib/api";
+import { play } from "@/lib/sound";
 
 // The description box: one market's story. Its name, the day it is visited, its vibe tiles, why it
 // suits this traveller, its description, the "Don't miss" items (from its checked details), and its
-// official website. ("Why can I see this?" joins it next.)
+// official website, and "Why can I see this?", which opens the proof behind every fact.
 
 export default function MarketDetails({ visit, when }: { visit: Visit; when: string }) {
+  const [why, setWhy] = useState(false);
   return (
     <div key={visit.market_id} className="panel snow-cap rise-in relative p-5 text-left
                                           shadow-[0_0_40px_rgb(244_195_90/0.12)] sm:p-6">
@@ -36,12 +42,19 @@ export default function MarketDetails({ visit, when }: { visit: Visit; when: str
         </div>
       )}
 
-      {visit.website && (
-        <a href={visit.website} target="_blank" rel="noopener noreferrer"
-           className="mt-5 inline-block text-sm text-gold underline underline-offset-4 hover:text-snow">
-          Official website ↗
-        </a>
-      )}
+      <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+        {visit.website && (
+          <a href={visit.website} target="_blank" rel="noopener noreferrer"
+             className="text-gold underline underline-offset-4 hover:text-snow">
+            Official website ↗
+          </a>
+        )}
+        <button type="button" onClick={() => { play("reveal"); setWhy(true); }}
+                className="text-frost underline decoration-dotted underline-offset-4 hover:text-gold">
+          Why can I see this?
+        </button>
+      </div>
+      {why && <WhyPanel marketId={visit.market_id} name={visit.name} onClose={() => setWhy(false)} />}
     </div>
   );
 }

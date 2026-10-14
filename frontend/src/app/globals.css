@@ -112,3 +112,17 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .draw-in { animation: none; stroke-dashoffset: 0; }
 }
+
+/* A panel sliding in from the right (see WhyPanel). */
+@keyframes slide-in {
+  from { transform: translateX(100%); }
+  to { transform: none; }
+}
+
+.slide-in {
+  animation: slide-in 0.5s cubic-bezier(0.45, 0, 0.25, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-in { animation: none; }
+}
