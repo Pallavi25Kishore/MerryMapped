@@ -68,6 +68,7 @@ def test_a_day_whose_travel_fails_stays_marked_and_keeps_no_markets():
     assert len(repaired.result.problems) == 1 and repaired.result.problems[0].startswith("Thu 24 Dec:")
     assert repaired.removed == [Removed(D2, 2, "this day's travel has a problem of its own, "
                                                "so its markets could not be checked")]
+    assert repaired.day_tips == {D2: "allowing trains from 08:00 would make this day work."}
 
 
 def test_wrong_dates_cannot_be_repaired():
@@ -75,3 +76,15 @@ def test_wrong_dates_cannot_be_repaired():
     repaired = repair(one_day, REQUEST, MARKETS, LINKS)
     assert (repaired.plan, repaired.removed) == (one_day, [])
     assert "exactly one day for each date" in repaired.result.problems[0]
+
+
+def test_tips_name_the_smallest_change_to_one_setting():
+    repaired = repair(plan([1, 4, 5], [2]), REQUEST, MARKETS, LINKS)
+    assert repaired.removed[0].tip == "allowing 3 markets a day would fit it in."
+    short = repair(plan([3], [2]), REQUEST, MARKETS, LINKS)
+    assert short.removed[0].tip == "spending at least 1 h 00 min at each market would fit it in."
+
+
+def test_no_tip_when_no_setting_helps():
+    stay = Plan((Day(D1, None, (Visit(1),), "Köln"), Day(D2, None, (Visit(1),), "Köln")))
+    assert repair(stay, REQUEST, MARKETS, LINKS).removed[0].tip is None  # a repeat
