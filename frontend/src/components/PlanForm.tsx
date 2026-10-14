@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import CityPicker from "@/components/CityPicker";
 import DatePicker from "@/components/DatePicker";
 import TicketButton from "@/components/TicketButton";
 import { ApiError, getOptions, setAccessCode, type Options, type TripForm } from "@/lib/api";
@@ -52,7 +53,15 @@ export default function PlanForm() {
         <h3 className="mb-3 text-sm uppercase tracking-[0.25em] text-gold">When</h3>
         <DatePicker firstAllowed={options.first_day} lastAllowed={options.last_day}
                     firstDay={form.first_day} lastDay={form.last_day}
-                    onChange={(first_day, last_day) => setForm({ ...form, first_day, last_day })} />
+                    onChange={(first_day, last_day) => setForm((f) => ({ ...f, first_day, last_day }))} />
+      </section>
+
+      <section className="space-y-5">
+        <h3 className="text-sm uppercase tracking-[0.25em] text-gold">Where</h3>
+        <CityPicker label="Start in" cities={options.cities} value={form.start_city}
+                    onChange={(start_city) => setForm((f) => ({ ...f, start_city }))} />
+        <CityPicker label="End in" cities={options.cities} value={form.end_city}
+                    onChange={(end_city) => setForm((f) => ({ ...f, end_city }))} />
       </section>
     </div>
   );
