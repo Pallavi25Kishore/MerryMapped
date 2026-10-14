@@ -25,3 +25,6 @@ PLANNER_MODEL = "claude-sonnet-5-5"
 
 # The Claude model that reads what the traveller typed into settings and wishes.
 REQUEST_READER_MODEL = "claude-sonnet-5-5"
+
+# The Claude model that checks how well a finished plan meets the wishes.
+WISH_REVIEWER_MODEL = "claude-sonnet-5-5"
