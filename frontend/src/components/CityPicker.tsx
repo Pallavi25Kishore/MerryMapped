@@ -20,7 +20,7 @@ export default function CityPicker({ places, start, end, onChange }: Props) {
     which === "start" ? onChange(city, end) : onChange(start, city);
 
   return (
-    <div className="space-y-4">
+    <div className="flex h-full flex-col gap-4">
       <div className="grid grid-cols-2 gap-3" role="tablist" aria-label="Choose where the trip starts or ends">
         {([["start", "Start in", start], ["end", "End in", end]] as const).map(([key, label, city]) => (
           <div key={key} className={`relative border transition duration-200
@@ -43,7 +43,11 @@ export default function CityPicker({ places, start, end, onChange }: Props) {
         ))}
       </div>
 
-      <RegionMap places={places} start={start} end={end} onPick={(city) => set(choosing, city)} />
+      {/* On wide screens the map fills this space without adding to its height, so the left column alone
+          sets how tall the row is. */}
+      <div className="relative min-h-0 flex-1">
+        <RegionMap places={places} start={start} end={end} onPick={(city) => set(choosing, city)} />
+      </div>
     </div>
   );
 }

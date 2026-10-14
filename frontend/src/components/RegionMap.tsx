@@ -63,7 +63,10 @@ type Props = {
 export default function RegionMap({ places, start, end, onPick }: Props) {
   const radii = tapRadii(places);
   return (
-    <svg viewBox={`0 0 ${MAP.width} ${MAP.height}`} className="w-full border border-snow/15 bg-night-deep/60"
+    // The map has spare land above and below our cities: it fills its box, trimming only that spare
+    // land (slice), so it can be as tall as the space beside it. On narrow screens it keeps one shape.
+    <svg viewBox={`0 0 ${MAP.width} ${MAP.height}`} preserveAspectRatio="xMidYMid slice"
+         className="aspect-[1000/760] w-full border border-snow/15 bg-night-deep/60 xl:absolute xl:inset-0 xl:aspect-auto xl:h-full"
          role="img" aria-label="Map of the cities: tap one to choose it">
       <defs>
         <radialGradient id="city-glow">
