@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from "react";
 import CityPicker from "@/components/CityPicker";
+import ConfirmView from "@/components/ConfirmView";
 import DatePicker from "@/components/DatePicker";
 import PaceSettings from "@/components/PaceSettings";
 import TicketButton from "@/components/TicketButton";
-import { ApiError, getOptions, setAccessCode, type Options, type TripForm } from "@/lib/api";
+import { ApiError, getOptions, setAccessCode, understand, type Options, type Settings, type TripForm,
+         type Understood } from "@/lib/api";
 
 // The trip form inside the planning panel. It first loads what the form needs from the backend
 // (the trip dates, our cities and the settings); without a valid access code it asks for one. The
-// dates are required; everything else has a sensible default. Back and See my plan sit at the end.
+// dates are required; everything else has a sensible default. See my plan asks the backend to read
+// the form and the typed wishes, then shows the confirm screen in the form's place.
 
 const MAX_TEXT = 2000; // the most the backend accepts for typed wishes
 
@@ -18,13 +21,33 @@ type Load = { state: "loading" } | { state: "code"; wrong: boolean } | { state: 
 
 type Props = {
   onBack: () => void;
-  onContinue?: (form: TripForm) => void; // See my plan (the confirm screen comes next)
+  onPlan?: (understood: Understood) => void; // Plan my trip (planning comes next)
 };
 
-export default function PlanForm({ onBack, onContinue }: Props) {
+export default function PlanForm({ onBack, onPlan }: Props) {
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const [attempt, setAttempt] = useState(0); // bumped to load again
   const [form, setForm] = useState<TripForm>({});
+  const [reading, setReading] = useState(false); // waiting for the backend to read the wishes
+  const [problem, setProblem] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<Understood | null>(null);
+
+  // The confirm screen and the form replace each other: start each at the top of the panel.
+  useEffect(() => {
+    document.querySelector('section[aria-label="Plan your trip"]')?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [confirm]);
+
+  const seeMyPlan = () => {
+    setReading(true);
+    setProblem(null);
+    understand(form)
+      .then(setConfirm)
+      .catch((error) => {
+        if (error instanceof ApiError && error.needsAccessCode) setLoad({ state: "code", wrong: true });
+        else setProblem("We couldn't read your wishes just now. Please try again in a moment.");
+      })
+      .finally(() => setReading(false));
+  };
 
   useEffect(() => {
     let current = true;
@@ -79,6 +102,11 @@ export default function PlanForm({ onBack, onContinue }: Props) {
   }
 
   const { options } = load;
+  if (confirm) {
+    const defaults = Object.fromEntries(Object.entries(options.settings).map(([key, range]) => [key, range.default]));
+    return <ConfirmView understood={confirm} form={form} defaults={defaults as Settings}
+                        onEdit={() => setConfirm(null)} onPlan={() => onPlan?.(confirm)} />;
+  }
   const datesChosen = Boolean(form.first_day && form.last_day);
   const text = form.text ?? "";
   return (
@@ -128,9 +156,13 @@ export default function PlanForm({ onBack, onContinue }: Props) {
       </section>
 
       <div className="mt-8 flex flex-wrap items-center justify-end gap-3">
-        {!datesChosen && <span className="mr-2 text-sm text-frost" aria-live="polite">Choose your dates to continue</span>}
+        <span className="mr-2 text-sm text-frost" aria-live="polite">
+          {problem ?? (!datesChosen ? "Choose your dates to continue" : "")}
+        </span>
         {back}
-        <TicketButton disabled={!datesChosen} onClick={() => onContinue?.(form)}>See my plan</TicketButton>
+        <TicketButton disabled={!datesChosen || reading} onClick={seeMyPlan}>
+          {reading ? "Reading your wishes…" : "See my plan"}
+        </TicketButton>
       </div>
     </div>
   );
