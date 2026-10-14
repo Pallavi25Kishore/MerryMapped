@@ -10,7 +10,7 @@ export default function SoundButton() {
 
   const toggle = () => {
     setSoundOn(!on);
-    if (!on) play("chime", true);
+    play("chime"); // heard only when the bell has just been turned on
   };
 
   return (

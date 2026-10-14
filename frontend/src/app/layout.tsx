@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Nunito } from "next/font/google";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import Magic from "@/components/Magic";
 import NightSky from "@/components/NightSky";
 import "./globals.css";
 
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Header />
         <div className="relative z-10 flex flex-1 flex-col">{children}</div>
         <Footer />
+        <Magic />
       </body>
     </html>
   );
