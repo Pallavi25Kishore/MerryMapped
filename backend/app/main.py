@@ -6,6 +6,7 @@ from functools import cache
 
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.connection import make_engine
@@ -146,8 +147,46 @@ def plan(confirmed: PlanIn, session: Session = Depends(get_session)):
                 request=request_json(request), itinerary=itinerary)
     session.add(trip)
     session.commit()
+    return trip_json(trip)
+
+
+def trip_json(trip: Trip) -> dict:
     return {"trip_id": trip.id, "created_at": trip.created_at.isoformat(), "request": trip.request,
-            "itinerary": itinerary}
+            "itinerary": trip.itinerary}
+
+
+def find_trip(session: Session, trip_id: str) -> Trip:
+    trip = session.get(Trip, trip_id)
+    if trip is None:
+        raise HTTPException(status_code=404, detail="No trip with this id.")
+    return trip
+
+
+@api.get("/trips")
+def my_trips(session: Session = Depends(get_session)):
+    """My trips, newest first: each trip's id, when it was planned, its dates and the cities slept in."""
+    trips = session.scalars(select(Trip).order_by(Trip.created_at.desc()))
+    return [{"trip_id": trip.id, "created_at": trip.created_at.isoformat(),
+             "first_day": trip.request["first_day"], "last_day": trip.request["last_day"],
+             "cities": list(dict.fromkeys(day["sleep_in"] for day in trip.itinerary["days"]))} for trip in trips]
+
+
+@api.get("/trips/{trip_id}")
+def open_trip(trip_id: str, session: Session = Depends(get_session)):
+    """A saved trip, as /plan returned it."""
+    return trip_json(find_trip(session, trip_id))
+
+
+@api.delete("/trips/{trip_id}")
+def delete_trip(trip_id: str, session: Session = Depends(get_session)):
+    """Delete a trip completely and return a receipt. Nothing of the trip is kept, not even the receipt."""
+    trip = find_trip(session, trip_id)
+    planned = trip.created_at.isoformat()
+    session.delete(trip)
+    session.commit()
+    return {"trip_id": trip_id, "planned_at": planned,
+            "deleted_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),  # UTC
+            "deleted": "the trip's request and itinerary", "kept": "nothing"}
 
 
 app.include_router(api)  # after every /api address is defined
