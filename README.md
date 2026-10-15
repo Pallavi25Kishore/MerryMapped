@@ -1,7 +1,15 @@
-# :christmas_tree:MerryMapped - Christmas markets trips you can count on
+# MerryMapped: Christmas markets trips you can count on
 
-## :books:About
+## About
 **Your Christmas markets trip, planned reliably around accurate opening hours and train schedules.**
+
+> [!IMPORTANT]
+> **Built on a legal engine that turns rules and law into code.** Before MerryMapped reads a single
+> web page, a rules engine decides whether it may. Each website's terms of use, its robots.txt
+> (including blocks aimed at AI crawlers), EU copyright and text-and-data-mining rules, and the app's
+> own stricter policies are written as code. Every use (collecting facts, keeping a short quote as
+> proof, writing a summary, showing a link) is judged separately, and every decision is explainable,
+> quoting the clause it rests on. If the rules don't allow it, the code never fetches it.
 
 MerryMapped plans a December trip through the Christmas markets of Germany, Belgium and France,
 travelling only by train. Tell it your dates, where to start and end, your pace and your wishes in
@@ -17,13 +25,13 @@ MerryMapped uses only two sources:
 Every fact shown can be traced back to a quote on the official page and the date it was checked,
 behind a **"Why can I see this?"** button on each market.
 
-## :handshake:Two Promises, Enforced in Code
+## Two Promises, Enforced in Code
 
 ![Static Badge](https://img.shields.io/badge/No%20closed%20markets-green) You never land at a closed market. Every plan is checked against the markets' checked opening days and hours and real train times before you see it.
 
 ![Static Badge](https://img.shields.io/badge/Permission%20first-green) The app never uses data it isn't allowed to use. A rules engine decides, before every single download, whether the site's robots.txt and terms permit it.
 
-## :rocket:Technologies
+## Technologies
 ### Front-End
 ![Static Badge](https://img.shields.io/badge/Next.js%2016-yellow?style=for-the-badge)
 ![Static Badge](https://img.shields.io/badge/React%2019-yellow?style=for-the-badge)
@@ -63,7 +71,7 @@ behind a **"Why can I see this?"** button on each market.
 ![Static Badge](https://img.shields.io/badge/ESLint-yellow?style=for-the-badge)
 ![Static Badge](https://img.shields.io/badge/Headless%20Chrome-yellow?style=for-the-badge)
 
-## :gear: Key Features
+## Key Features
 
 ![Static Badge](https://img.shields.io/badge/Plan%20in%20plain%20words-purple) Pick dates on a December calendar, tap start and end cities on a map, set your pace (earliest train, hours per market, train time per day, markets per day) and type wishes like "somewhere medieval, with good mulled wine". A confirm screen shows how it was understood.
 
@@ -79,7 +87,7 @@ behind a **"Why can I see this?"** button on each market.
 
 ![Static Badge](https://img.shields.io/badge/Your%20trips-purple) Every planned trip is saved until you delete it; deleting removes everything and shows a receipt.
 
-## :robot: AI Components: Agent, AI Calls and Code Guardrails
+## AI Components: Agent, AI Calls and Code Guardrails
 
 ![Static Badge](https://img.shields.io/badge/AI%20agent%20for%20onboarding%20data-red)
   - Claude runs as a **tool-use agent** that explores a market's official website to find its facts. It has two tools: `open_page` (open one page, with a one-line reason) and `finish` (end the search with a summary).
@@ -89,6 +97,7 @@ behind a **"Why can I see this?"** button on each market.
 How a market is onboarded, step by step:
 
 ```mermaid
+%%{init: {"themeVariables": {"fontSize": "11px"}, "flowchart": {"nodeSpacing": 18, "rankSpacing": 22, "padding": 6, "diagramPadding": 4, "subGraphTitleMargin": {"top": 4, "bottom": 12}}}}%%
 flowchart TD
   S(["You give one address:<br/>the market's official page"]) --> A1
 
@@ -138,7 +147,7 @@ flowchart TD
   - The AI drafts; **plain code decides**. A checker holds every plan to hard rules, problems go back to the AI for a few rounds, and a repair step in code removes anything that still breaks a rule, with a tip.
   - Code also checks every fact (quote really on the page, real dates, no contradictions), rejects descriptions that copy more than five words in a row from the site, and keeps the traveller's settings within allowed ranges. The AI never has the last word.
 
-## :computer: Application Architecture
+## Application Architecture
 
 The main parts and how data flows between them:
 
@@ -250,7 +259,7 @@ flowchart LR
  - About 390 **pytest** tests; AI calls are replaced with pretend answers and the database with in-memory SQLite, so the tests run in seconds.
  - ESLint and TypeScript checks for the frontend; headless Chrome for checking pages during development.
 
-## :lock:Privacy and Security
+## Privacy and Security
 
 ![Static Badge](https://img.shields.io/badge/Access%20code-orange) One access code protects the whole API; it is compared in constant time, and if none is set, everything is refused.
 
@@ -260,7 +269,7 @@ flowchart LR
 
 ![Static Badge](https://img.shields.io/badge/Secrets-orange) Secrets live only in an untracked `.env` file.
 
-## :sparkles:Getting Started
+## Getting Started
 ### Prerequisites
 ![Static Badge](https://img.shields.io/badge/Python%203.13-black)
 ![Static Badge](https://img.shields.io/badge/pip-black)
@@ -303,7 +312,7 @@ npm run dev
 
 6. The background picture isn't included because of its licence; see `frontend/README.md` to download it.
 
-## :clap:Credits
+## Credits
 Train timetables: Eurostar, SNCF Voyageurs, DELFI e.V. via gtfs.de and NMBS/SNCB. Country shapes:
 Natural Earth. Background designed by Magnific. Market facts belong to each market's official
 website, linked from every market.
