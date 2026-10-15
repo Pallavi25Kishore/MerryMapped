@@ -41,12 +41,13 @@ export default function PaceSettings({ ranges, changed, onChange }: Props) {
           const { low = -Infinity, high = Infinity } = ranges[key];
           const current = value(key);
           return (
-            <div key={key} className="flex items-center justify-between py-2">
+            // On a narrow screen the controls move under the label (on the right) instead of squeezing it.
+            <div key={key} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2">
               <span className="text-snow">{label}</span>
-              <div className="flex items-center gap-3">
+              <div className="ml-auto flex items-center gap-2 sm:gap-3">
                 <StepButton label={`Less: ${label}`} disabled={current - step < low}
                             onClick={() => update(key, (v) => Math.max(low, v - step))}>−</StepButton>
-                <span className="w-24 text-center tabular-nums text-gold" aria-live="polite">{show(current)}</span>
+                <span className="w-16 text-center tabular-nums text-gold sm:w-24" aria-live="polite">{show(current)}</span>
                 <StepButton label={`More: ${label}`} disabled={current + step > high}
                             onClick={() => update(key, (v) => Math.min(high, v + step))}>+</StepButton>
               </div>
