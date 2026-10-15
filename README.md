@@ -3,7 +3,8 @@
 ## About
 **Your Christmas markets trip, planned reliably around accurate opening hours and train schedules.**
 
-> [!IMPORTANT]
+> ![Static Badge](https://img.shields.io/badge/Legal%20engine-blueviolet)
+>
 > **Built on a legal engine that turns rules and law into code.** Before MerryMapped reads a single
 > web page, a rules engine decides whether it may. Each website's terms of use, its robots.txt
 > (including blocks aimed at AI crawlers), EU copyright and text-and-data-mining rules, and the app's
@@ -33,43 +34,43 @@ behind a **"Why can I see this?"** button on each market.
 
 ## Technologies
 ### Front-End
-![Static Badge](https://img.shields.io/badge/Next.js%2016-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/React%2019-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/TypeScript-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/Tailwind%20CSS%204-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/SVG%20animation-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/Canvas-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/Web%20Audio%20API-yellow?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/Next.js%2016-blue?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/React%2019-blue?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/TypeScript-blue?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/Tailwind%20CSS%204-blue?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/SVG%20animation-blue?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/Canvas-blue?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/Web%20Audio%20API-blue?style=for-the-badge)
 
 ### Back-End
-![Static Badge](https://img.shields.io/badge/Python%203.13-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/FastAPI-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/Pydantic-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/httpx-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/Protego%20%28robots.txt%29-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/Beautiful%20Soup-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/PyYAML-yellow?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/Python%203.13-green?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/FastAPI-green?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/Pydantic-green?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/httpx-green?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/Protego%20%28robots.txt%29-green?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/Beautiful%20Soup-green?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/PyYAML-green?style=for-the-badge)
 
 ### AI Agent + Generative AI
-![Static Badge](https://img.shields.io/badge/Anthropic%20Claude%20API-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/Claude%20Sonnet%205.5-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/Tool%20use%20agent-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/Structured%20JSON%20output-yellow?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/Anthropic%20Claude%20API-blueviolet?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/Claude%20Sonnet%205.5-blueviolet?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/Tool%20use%20agent-blueviolet?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/Structured%20JSON%20output-blueviolet?style=for-the-badge)
 
 ### Database
-![Static Badge](https://img.shields.io/badge/PostgreSQL-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/Neon-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/SQLAlchemy%202-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/psycopg%203-yellow?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/PostgreSQL-orange?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/Neon-orange?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/SQLAlchemy%202-orange?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/psycopg%203-orange?style=for-the-badge)
 
 ### Open Data
-![Static Badge](https://img.shields.io/badge/GTFS%20timetables-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/Natural%20Earth-yellow?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/GTFS%20timetables-teal?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/Natural%20Earth-teal?style=for-the-badge)
 
 ### Testing
-![Static Badge](https://img.shields.io/badge/pytest-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/ESLint-yellow?style=for-the-badge)
-![Static Badge](https://img.shields.io/badge/Headless%20Chrome-yellow?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/pytest-lightgrey?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/ESLint-lightgrey?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/Headless%20Chrome-lightgrey?style=for-the-badge)
 
 ## Key Features
 
