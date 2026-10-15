@@ -7,12 +7,13 @@ import TripMap from "@/components/TripMap";
 import TripTimeline, { type Chosen } from "@/components/TripTimeline";
 import { longDate } from "@/components/DatePicker";
 import StringLights from "@/components/StringLights";
+import TripActions from "@/components/TripActions";
 import { ApiError, getOptions, openTrip, type Itinerary, type Place, type Trip } from "@/lib/api";
 import { play } from "@/lib/sound";
 import { numberWord } from "@/lib/words";
 
 // A saved trip, loaded in the browser (it needs the access code): string lights across the top, a
-// headline, the whole itinerary flowing down the left, and on the right (staying in view) the map's
+// headline with "saved" and Plan another trip, the whole itinerary flowing down the left, and on the right (staying in view) the map's
 // place and one description box for the chosen market. On phones the description slides up from the
 // bottom. The holiday map and the wish review come next.
 
@@ -85,6 +86,7 @@ export default function TripView({ params }: { params: Promise<{ id: string }> }
           {headline(itinerary)}
         </h1>
         <p className="mt-3 text-lg text-gold">{longDate(days[0].date)} to {longDate(days[days.length - 1].date)}</p>
+        <TripActions />
       </div>
 
       <div className="mx-auto mt-10 grid max-w-[1312px] gap-10 px-4 xl:grid-cols-[7fr_5fr]">
