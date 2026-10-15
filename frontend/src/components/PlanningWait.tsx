@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import TrainSprite from "@/components/TrainSprite";
 
 // While the trip is planned (about half a minute): a wide winter scene across the screen. Little
 // trees, gift boxes and a market stall in white and gold stand along a dotted track, under a star and
@@ -20,7 +21,6 @@ const LINE_SECONDS = 4;
 const WIDTH = 1400;
 const TRACK = "M -20 150 C 200 100, 350 175, 560 140 S 900 95, 1080 135 S 1300 165, 1420 125";
 const LAP = 10; // seconds for the train to cross the screen
-const CARS = ["engine", "gift", "tree"] as const;
 const GAP = 0.25; // seconds between one car and the next (close coupled)
 
 // Things standing along the track, by how far along it they are (0 to 1).
@@ -58,31 +58,6 @@ function Stall() {
       <rect x="-22" y="-30" width="44" height="30" className="fill-snow/90" />
       <path d="M -22 -14 H 22" fill="none" />
       {[-15, -5, 5, 15].map((x) => <circle key={x} cx={x} cy={-26} r={1.8} className="fill-gold stroke-none" />)}
-    </g>
-  );
-}
-
-function Car({ kind }: { kind: (typeof CARS)[number] }) {
-  if (kind === "engine") {
-    return (
-      <g transform="translate(-16 -20)" className="fill-cranberry stroke-gold" strokeWidth={1.2}>
-        <rect x="0" y="8" width="26" height="12" rx="2" />
-        <rect x="18" y="0" width="11" height="13" rx="1.5" />
-        <rect x="4" y="2" width="5" height="7" />
-        <circle cx="7" cy="22" r="3.5" className="fill-night stroke-gold" strokeWidth="1.6" />
-        <circle cx="20" cy="22" r="3.5" className="fill-night stroke-gold" strokeWidth="1.6" />
-      </g>
-    );
-  }
-  return (
-    <g transform="translate(-12 -16)">
-      <rect x="0" y="6" width="24" height="10" rx="1.5" className="fill-[#2f7d4f] stroke-gold" strokeWidth="1.2" />
-      {kind === "gift"
-        ? <><rect x="6" y="-4" width="12" height="10" className="fill-cranberry stroke-gold" strokeWidth="1.2" />
-            <path d="M 12 -4 V 6" className="stroke-gold" strokeWidth="1.2" /></>
-        : <path d="M 12 -10 L 19 6 L 5 6 Z" className="fill-[#2f7d4f] stroke-gold" strokeWidth="1.2" />}
-      <circle cx="6" cy="18" r="3" className="fill-night stroke-gold" strokeWidth="1.5" />
-      <circle cx="18" cy="18" r="3" className="fill-night stroke-gold" strokeWidth="1.5" />
     </g>
   );
 }
@@ -126,13 +101,7 @@ export default function PlanningWait() {
           </g>
         ))}
 
-        {CARS.map((kind, i) => (
-          <g key={kind} className="motion-reduce:hidden">
-            <Car kind={kind} />
-            <animateMotion dur={`${LAP}s`} repeatCount="indefinite" path={TRACK} rotate="auto"
-                           begin={`-${LAP - i * GAP}s`} />
-          </g>
-        ))}
+        <TrainSprite path={TRACK} lap={LAP} gap={GAP} />
       </svg>
       <p key={line} className="rise-in mt-4 min-h-6 text-snow/85">{LINES[line]}</p>
       <p className="mt-2 text-sm text-frost">This usually takes about half a minute.</p>

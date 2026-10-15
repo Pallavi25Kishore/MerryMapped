@@ -1,6 +1,7 @@
 "use client";
 
 import type { ItineraryDay, Place } from "@/lib/api";
+import TrainSprite from "@/components/TrainSprite";
 import { COUNTRIES, project } from "@/lib/mapShapes";
 
 // The holiday map: zoomed to the trip, the countries, each night's city once in order (a little
@@ -44,6 +45,14 @@ function labelPlace(stop: Stop, all: Stop[]): { x: number; y: number; anchor: "s
   return dy > 0 ? { x: 0, y: -42, anchor: "middle" } : { x: 0, y: 22, anchor: "middle" };
 }
 
+// The line from one stop to the next: nearly straight, with only a faint bend (alternating sides) so it
+// reads like a real railway between two places rather than a ruler line.
+function arc(a: Stop, b: Stop, i: number): string {
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  const dx = b.x - a.x, dy = b.y - a.y, bend = 0.05 * (i % 2 ? 1 : -1);
+  return `Q ${mx - dy * bend} ${my + dx * bend} ${b.x} ${b.y}`;
+}
+
 // Frame the route with a margin, in the map's 4:3 shape.
 function frame(points: Stop[]): string {
   const xs = points.map((p) => p.x), ys = points.map((p) => p.y);
@@ -81,10 +90,11 @@ type Props = { days: ItineraryDay[]; places: Place[]; chosenDay: number | null }
 export default function TripMap({ days, places, chosenDay }: Props) {
   const route = stops(days, places);
   if (route.length === 0) return null;
-  const path = route.map((s, i) => `${i ? "L" : "M"} ${s.x} ${s.y}`).join(" ");
+  const path = `M ${route[0].x} ${route[0].y} ` + route.slice(1).map((s, i) => arc(route[i], s, i)).join(" ");
   const chosenStop = route.findIndex((s) => chosenDay !== null && s.days.includes(chosenDay));
   const length = route.slice(1).reduce((sum, s, i) => sum + Math.hypot(s.x - route[i].x, s.y - route[i].y), 0);
-  const lap = Math.max(6, route.length * 2.5); // seconds for the train to travel the whole route
+  const lap = Math.max(8, length / 45); // seconds for the train to travel the whole route (about 45 units a second)
+  const gap = (32 * lap) / Math.max(length, 1); // seconds between cars, so they stay close coupled
 
   return (
     <svg viewBox={frame(route)} className="panel block aspect-[4/3] w-full" role="img"
@@ -96,8 +106,8 @@ export default function TripMap({ days, places, chosenDay }: Props) {
         </radialGradient>
         {/* The railway draws itself in: a mask revealing the dotted line from start to end. */}
         <mask id="draw-route">
-          <path d={path} fill="none" stroke="white" strokeWidth={14} strokeLinecap="round"
-                strokeDasharray={length} strokeDashoffset={length} className="draw-in" />
+          <path d={path} fill="none" stroke="white" strokeWidth={14} strokeLinecap="round" pathLength={1}
+                strokeDasharray={1} strokeDashoffset={1} className="draw-in" />
         </mask>
       </defs>
 
@@ -109,8 +119,8 @@ export default function TripMap({ days, places, chosenDay }: Props) {
       <g mask="url(#draw-route)">
         <path d={path} fill="none" className="stroke-gold/70" strokeWidth={3} strokeDasharray="2 7" strokeLinecap="round" />
         {chosenStop > 0 && (
-          <line x1={route[chosenStop - 1].x} y1={route[chosenStop - 1].y} x2={route[chosenStop].x} y2={route[chosenStop].y}
-                className="stroke-gold" strokeWidth={4} strokeLinecap="round" />
+          <path d={`M ${route[chosenStop - 1].x} ${route[chosenStop - 1].y} ${arc(route[chosenStop - 1], route[chosenStop], chosenStop - 1)}`}
+                fill="none" className="stroke-gold" strokeWidth={4} strokeLinecap="round" />
         )}
       </g>
 
@@ -130,18 +140,8 @@ export default function TripMap({ days, places, chosenDay }: Props) {
         );
       })}
 
-      {/* The little train: a red engine with a green wagon, travelling the route. */}
-      {route.length > 1 && (
-        <g className="motion-reduce:hidden">
-          <g transform="translate(-12 -16)">
-            <rect x="0" y="6" width="20" height="9" rx="1.5" className="fill-cranberry stroke-gold" strokeWidth={1.2} />
-            <rect x="13" y="0" width="8" height="10" rx="1" className="fill-cranberry stroke-gold" strokeWidth={1.2} />
-            <circle cx="5" cy="17" r="2.6" className="fill-night stroke-gold" strokeWidth={1.2} />
-            <circle cx="15" cy="17" r="2.6" className="fill-night stroke-gold" strokeWidth={1.2} />
-          </g>
-          <animateMotion dur={`${lap}s`} repeatCount="indefinite" path={path} rotate="auto" />
-        </g>
-      )}
+      {/* The little train, the same as the planning scene's, travelling the route. */}
+      {route.length > 1 && <TrainSprite path={path} lap={lap} gap={gap * 1.5} size={1.4} />}
     </svg>
   );
 }
