@@ -56,7 +56,7 @@ export default function TripList() {
     return (
       <div className="panel w-full max-w-lg p-6 text-center sm:p-8">
         <p className="text-snow/85">No saved trips yet. Every trip you plan is kept here until you delete it.</p>
-        <Link href="/" className="mt-5 inline-block text-gold underline underline-offset-4 hover:text-snow">
+        <Link href="/?plan" className="mt-5 inline-block text-gold underline underline-offset-4 hover:text-snow">
           Plan a trip
         </Link>
       </div>
