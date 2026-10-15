@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 import httpx
 
 # Our bot's name tag, sent with every request. The link says who runs it.
-BOT_USER_AGENT = "MerryMappedBot/0.1 (+https://github.com/Pallavi25Kishore/merrymapped)"
+BOT_USER_AGENT = "MerryMappedBot/0.1 (+https://github.com/Pallavi25Kishore/MerryMapped)"
 
 
 def make_client(transport: httpx.BaseTransport | None = None) -> httpx.Client:
