@@ -5,6 +5,7 @@ import { use, useEffect, useState } from "react";
 import MarketDetails from "@/components/MarketDetails";
 import TripMap from "@/components/TripMap";
 import TripTimeline, { type Chosen } from "@/components/TripTimeline";
+import WishesGranted from "@/components/WishesGranted";
 import { longDate } from "@/components/DatePicker";
 import StringLights from "@/components/StringLights";
 import TripActions from "@/components/TripActions";
@@ -106,6 +107,9 @@ export default function TripView({ params }: { params: Promise<{ id: string }> }
           </div>
         </aside>
       </div>
+
+      {/* Last, below the itinerary: the wishes the trip grants. */}
+      <WishesGranted wishes={itinerary.wishes} typed={load.trip.request.wishes} />
 
       {/* Phones: the description slides up from the bottom. */}
       {sheet && visit && (
