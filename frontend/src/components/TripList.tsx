@@ -100,7 +100,7 @@ function TripCard({ trip }: { trip: TripSummary }) {
   return (
     <li className="panel p-5 text-left transition hover:shadow-[0_0_24px_rgb(244_195_90/0.15)] sm:p-6">
       <div className="flex flex-wrap items-center gap-4">
-        <Link href={`/trips/${encodeURIComponent(trip.trip_id)}`} className="group min-w-0 flex-1">
+        <Link href={`/trips/${encodeURIComponent(trip.trip_id)}`} className="group w-full min-w-0 sm:w-auto sm:flex-1">
           <p className="text-sm uppercase tracking-[0.2em] text-gold">{dates}</p>
           <p className="mt-1 font-display text-xl text-snow group-hover:text-gold [font-variation-settings:'SOFT'_100]">
             {trip.cities.join(" · ")}
