@@ -254,11 +254,12 @@ export default function PlanForm({ onBack, onWaiting }: Props) {
 }
 
 // Asked once: the code from backend/.env, then remembered in this browser.
-function AccessCode({ wrong, onEnter }: { wrong: boolean; onEnter: (code: string) => void }) {
+export function AccessCode({ wrong, onEnter, purpose = "start planning" }:
+                           { wrong: boolean; onEnter: (code: string) => void; purpose?: string }) {
   const [code, setCode] = useState("");
   return (
     <form className="mt-6 text-left" onSubmit={(event) => { event.preventDefault(); if (code.trim()) onEnter(code.trim()); }}>
-      <label htmlFor="access-code" className="block text-snow/85">Enter your access code to start planning.</label>
+      <label htmlFor="access-code" className="block text-snow/85">Enter your access code to {purpose}.</label>
       <input id="access-code" type="password" autoComplete="current-password" value={code}
              onChange={(event) => setCode(event.target.value)}
              className="mt-3 w-full border border-snow/25 bg-night-deep/50 px-4 py-3 text-snow outline-none
