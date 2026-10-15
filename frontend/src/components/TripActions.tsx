@@ -14,7 +14,7 @@ export default function TripActions() {
   const another = (event: React.MouseEvent<HTMLButtonElement>) => {
     castMagic(event.currentTarget);
     play("magic");
-    router.push("/");
+    router.push("/?plan"); // straight into the planner
   };
 
   return (
