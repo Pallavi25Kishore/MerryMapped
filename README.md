@@ -287,7 +287,7 @@ flowchart LR
 ### Installation
 1. Clone the repo
 ```sh
-git clone https://github.com/Pallavi25Kishore/merrymapped.git
+git clone https://github.com/Pallavi25Kishore/MerryMapped.git
 ```
 
 2. Create `backend/.env` with your own values
