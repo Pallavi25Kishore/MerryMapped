@@ -9,7 +9,7 @@ import SoundButton from "@/components/SoundButton";
 // page to return to its welcome view.
 export const HOME_EVENT = "merrymapped:home";
 
-// The header on every page, floating on the night sky: the pages and the sound bell, on the right.
+// The header on every page, floating on the night sky: the pages and the sound button, on the right.
 
 const PAGES = [
   { href: "/", label: "Home" },
