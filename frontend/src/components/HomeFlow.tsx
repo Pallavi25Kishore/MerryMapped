@@ -47,6 +47,26 @@ export default function HomeFlow() {
     setTipped(false); // Start planning tips back up into view
   };
 
+  // Next.js keeps this page in memory while another page is shown. On leaving, return to the welcome
+  // (the form keeps what was entered, as with Back), so Home in the header always shows the welcome.
+  useEffect(() => () => {
+    setPlanning(false);
+    setTipped(false);
+  }, []);
+
+  // Arriving from Start planning on another page (/?plan): tidy the address back to /, then, on the
+  // next frame, glide from the welcome into the planner.
+  useEffect(() => {
+    if (!new URL(window.location.href).searchParams.has("plan")) return;
+    window.history.replaceState(null, "", "/");
+    const frame = requestAnimationFrame(() => {
+      setTipped(true);
+      setPlanning(true);
+      setOpened(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   // Home in the header returns to the welcome view, like Back.
   useEffect(() => {
     const home = () => {
