@@ -1,10 +1,16 @@
-import Link from "next/link";
+"use client";
+
+import { useRouter } from "next/navigation";
 import StringLights from "@/components/StringLights";
+import TicketButton from "@/components/TicketButton";
+import { castMagic } from "@/lib/magic";
+import { play } from "@/lib/sound";
 
 // About us, at /about: for travellers, not coders. What MerryMapped is and why it can be trusted: its
 // two promises, where every market fact and every train comes from, how a trip is planned and checked,
 // and what is kept. Dressed for the season like the trip page: string lights across the top, fresh snow
-// on each card, the cards rising in one after another, and a warm wish to close.
+// on each card, the cards rising in one after another, and a warm wish to close. Start planning casts
+// the same magic as on the home page and opens the planner there (/?plan).
 
 const SECTIONS = [
   {
@@ -51,6 +57,14 @@ const SECTIONS = [
 ];
 
 export default function AboutPage() {
+  const router = useRouter();
+
+  const start = (event: React.MouseEvent<HTMLButtonElement>) => {
+    castMagic(event.currentTarget);
+    play("magic");
+    router.push("/?plan");
+  };
+
   return (
     <main className="flex flex-1 flex-col items-center px-4 pb-12">
       <StringLights />
@@ -82,12 +96,7 @@ export default function AboutPage() {
         Wishing you a merry, well-mapped December.
       </p>
 
-      <Link href="/"
-            className="mt-6 border-[1.5px] border-gold/80 bg-night px-9 py-3.5 text-base font-semibold uppercase
-                       tracking-[0.22em] text-gold transition duration-300 hover:bg-night-deep
-                       hover:shadow-[0_0_18px_rgb(244_195_90/0.5)]">
-        Start planning
-      </Link>
+      <TicketButton className="mt-6" onClick={start}>Start planning</TicketButton>
     </main>
   );
 }
