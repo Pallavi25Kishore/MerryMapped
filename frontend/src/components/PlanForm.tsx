@@ -237,14 +237,15 @@ export default function PlanForm({ onBack, onWaiting }: Props) {
                                transition placeholder:text-snow/35 focus:border-gold" />
           <div className="mt-2 flex justify-between gap-4 text-sm text-frost">
             <span>Santa can&apos;t promise everything, but we&apos;ll fit in as many wishes as the trains allow.</span>
-            <span className="tabular-nums">{text.length} / {MAX_TEXT}</span>
+            <span className="shrink-0 whitespace-nowrap tabular-nums">{text.length} / {MAX_TEXT}</span>
           </div>
         </section>
 
         <div className="mt-8 flex flex-wrap items-center justify-end gap-3">
           {problem && <span className="mr-2 text-sm text-frost" aria-live="polite">{problem}</span>}
-          {back}
-          <TicketButton disabled={reading} onClick={seeMyPlan}>
+          {/* Phones: the two buttons stack, both full width. */}
+          <TicketButton kind="quiet" className="max-sm:w-full" onClick={onBack}>Back</TicketButton>
+          <TicketButton className="max-sm:w-full" disabled={reading} onClick={seeMyPlan}>
             {reading ? "Reading your wishes…" : "See my plan"}
           </TicketButton>
         </div>
