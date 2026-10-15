@@ -90,7 +90,7 @@ export default function PlanForm({ onBack, onWaiting }: Props) {
     setPlanning("waiting");
     plan({ ...understood.request, not_covered: understood.not_covered })
       .then((trip) => {
-        play("chime");
+        play("magic"); // the trip appears with the same magic as the buttons
         // Next.js keeps this page in memory: reset it first, so Home later shows the welcome view.
         setPlanning(null);
         setConfirm(null);
