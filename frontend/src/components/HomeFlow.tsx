@@ -71,8 +71,9 @@ export default function HomeFlow() {
       <div aria-hidden className={`pointer-events-none fixed inset-0 bg-night/30 backdrop-blur-md ${GLIDE}
                                    ${planning ? "opacity-100" : "opacity-0"}`} />
 
+      {/* With the form open the title moves up small; phones have no room for it, so it fades away. */}
       <div className={`relative flex flex-col items-center gap-6 ${GLIDE}
-                       ${planning ? "-translate-y-[24vh] scale-[0.6]" : ""}`}>
+                       ${planning ? "-translate-y-[24vh] scale-[0.6] max-sm:opacity-0" : ""}`}>
         <p className="text-sm uppercase tracking-[0.3em] text-gold">Germany · Belgium · France</p>
         <h1 className="font-display text-5xl font-semibold sm:text-7xl [font-variation-settings:'SOFT'_100]">
           Merry<span className="text-gold">Mapped</span>
@@ -93,7 +94,7 @@ export default function HomeFlow() {
       <section ref={panel} tabIndex={-1} aria-label="Plan your trip" inert={!planning}
                className={`absolute top-[18%] mx-auto max-h-[calc(82%-1rem)] overflow-y-auto outline-none
                            ${waiting ? "inset-x-0 max-w-none p-0"
-                                     : "panel inset-x-4 max-w-2xl p-8 xl:max-w-[1312px]"}
+                                     : "panel inset-x-4 max-w-2xl p-5 xl:max-w-[1312px]"}
                            ${waiting ? "" : "shadow-2xl shadow-black/40 sm:p-10"} ${PANEL_GLIDE}
                            ${planning ? "translate-y-0 opacity-100 delay-150" : "pointer-events-none translate-y-16 opacity-0"}`}>
         {opened && <PlanForm onBack={back} onWaiting={setWaiting} />}
